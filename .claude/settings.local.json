@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/aliahjyage/vaisseau/js)",
+      "Bash(cp /Users/aliahjyage/Downloads/vaisseau_v2.html /Users/aliahjyage/vaisseau/vaisseau_backup_s1.html)",
+      "Bash(open *)"
+    ]
+  }
+}
