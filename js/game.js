@@ -2,7 +2,10 @@
 //  LOGIQUE DE JEU — boucle, actions, victoire
 // ============================================================
 
-function loop(){ frame++; update(); draw(); requestAnimationFrame(loop); }
+function loop(){
+  requestAnimationFrame(loop); // schedulé en premier : une erreur ne coupe pas la boucle
+  frame++; update(); draw();
+}
 
 function update(){
   if(S.over) return;
