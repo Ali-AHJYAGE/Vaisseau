@@ -1,6 +1,5 @@
 // ============================================================
 //  Serveur Le Vaisseau — HTTP (fichiers statiques) + WebSocket (relais)
-//  Usage : node server.js
 // ============================================================
 const http = require('http');
 const fs   = require('fs');
@@ -12,47 +11,56 @@ const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css' : 'text/css',
   '.js'  : 'application/javascript',
+  '.json': 'application/json',
+  '.png' : 'image/png',
 };
 
-// ── Serveur HTTP : sert les fichiers statiques du dossier courant ──
 const server = http.createServer((req, res) => {
-  const url = req.url === '/' ? '/index.html' : req.url;
+  const url = req.url === '/' ? '/index.html' : req.url.split('?')[0];
   const filePath = path.join(__dirname, url);
-
   fs.readFile(filePath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('404 — fichier introuvable'); return; }
-    const ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });
+    if (err) { res.writeHead(404); res.end('404'); return; }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'text/plain' });
     res.end(data);
   });
 });
 
-// ── WebSocket : relais entre les deux joueurs ──────────────────────
 const wss = new WebSocketServer({ server });
 
-wss.on('connection', ws => {
-  const nb = wss.clients.size;
-  if (nb > 2) { ws.close(1008, 'Partie pleine (2 joueurs max)'); return; }
+function broadcast(obj) {
+  const msg = JSON.stringify(obj);
+  wss.clients.forEach(c => { if (c.readyState === 1) c.send(msg); });
+}
 
-  console.log(`Joueur connecté (${nb}/2)`);
+wss.on('connection', ws => {
+  if (wss.clients.size > 2) { ws.close(1008, 'Partie pleine'); return; }
+
+  const count = wss.clients.size;
+  console.log(`Joueur connecté (${count}/2)`);
+  // Informer tout le monde du nombre de joueurs connectés
+  broadcast({ type: 'players', count });
 
   ws.on('message', data => {
-    // Transmettre le message à l'autre joueur
-    wss.clients.forEach(client => {
-      if (client !== ws && client.readyState === 1) client.send(data);
+    wss.clients.forEach(c => {
+      if (c !== ws && c.readyState === 1) c.send(data);
     });
   });
 
   ws.on('close', () => {
     console.log('Joueur déconnecté');
-    // Prévenir l'autre joueur pour qu'il reload
-    wss.clients.forEach(client => {
-      if (client.readyState === 1) client.send(JSON.stringify({ type: 'reset' }));
-    });
+    // Attendre 4s avant de conclure que le départ est définitif
+    // (les réseaux mobiles coupent brièvement et reconnectent)
+    setTimeout(() => {
+      const remaining = wss.clients.size;
+      broadcast({ type: 'players', count: remaining });
+      if (remaining < 2) {
+        // Le partenaire est vraiment parti — on prévient sans forcer le reload
+        broadcast({ type: 'partner-left' });
+      }
+    }, 4000);
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 Le Vaisseau — serveur lancé sur http://localhost:${PORT}`);
-  console.log('   Ouvre cette URL dans deux onglets (ou partage-la via ngrok)\n');
+  console.log(`🚀 Vaisseau — http://localhost:${PORT}`);
 });

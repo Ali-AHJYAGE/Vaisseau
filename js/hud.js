@@ -88,6 +88,7 @@ function _updateActionPanel(){
 function drawBanner(){
   const b=document.getElementById('banner'),t=document.getElementById('banner-text');
   b.style.display='flex';
-  if(S.over==='innocent') t.textContent=(myRole==='innocent'||localMode)?'😇 Mission accomplie !':'😇 L\'innocent·e a réussi…';
+  if(S.over==='disconnect')  t.textContent='🔌 Partenaire déconnecté…';
+  else if(S.over==='innocent') t.textContent=(myRole==='innocent'||localMode)?'😇 Mission accomplie !':'😇 L\'innocent·e a réussi…';
   else t.textContent=(myRole==='imposteur'||localMode)?'😈 Vaisseau sabordé — Victoire !':'💀 Game over.';
 }

@@ -1,29 +1,31 @@
 // ============================================================
 //  RÉSEAU — WebSocket vers le serveur relais
-//  En mode local (même clavier) : send() ne fait rien.
 // ============================================================
 
 let ws = null;
 
+function _setStatus(txt) {
+  const el = document.getElementById('conn-status');
+  if (el) el.textContent = txt;
+}
+
 function connectWS() {
-  // Ne se connecte pas si le fichier est ouvert directement (file://)
   if (location.protocol === 'file:') return;
 
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const url = `${proto}://${location.host}`;
-
-  ws = new WebSocket(url);
+  ws = new WebSocket(`${proto}://${location.host}`);
 
   ws.onopen = () => {
-    console.log('[Vaisseau] Connecté au serveur');
-    document.getElementById('conn-status').textContent = '🟢 Connecté — attente du 2ᵉ joueur…';
+    _setStatus('🟢 Connecté — attente du 2ᵉ joueur…');
   };
 
-  ws.onmessage = e => handleMessage(JSON.parse(e.data));
+  ws.onmessage = e => {
+    try { handleMessage(JSON.parse(e.data)); } catch(_) {}
+  };
 
   ws.onclose = () => {
     ws = null;
-    document.getElementById('conn-status').textContent = '🔴 Déconnecté — reconnexion…';
+    _setStatus('🔴 Déconnecté — reconnexion…');
     setTimeout(connectWS, 2000);
   };
 
@@ -31,23 +33,50 @@ function connectWS() {
 }
 
 function handleMessage(m) {
-  if (m.type === 'reset')    { location.reload(); return; }
-  if (m.type === 'inno')     { Object.assign(S.inno, m.data); }
-  if (m.type === 'impo')     { S.impo.x = m.x; S.impo.y = m.y; S.impo.present = true; }
-  if (m.type === 'world')    { S.tasks = m.tasks; S.sabotageUntil = m.sabotageUntil; S.oxygenUntil = m.oxygenUntil; S.over = m.over; }
-  if (m.type === 'attack')   { if (myRole === 'innocent') applyHit(); }
-  if (m.type === 'sabotage') { S.sabotageUntil = m.until; }
-  if (m.type === 'oxygen')   { S.oxygenUntil = m.until; }
-  if (m.type === 'oxyfix')   { S.oxygenUntil = 0; }
+  switch (m.type) {
+    // Serveur informe du nombre de joueurs connectés
+    case 'players':
+      if (m.count >= 2) _setStatus('🟢 2 joueurs connectés — choisissez un rôle !');
+      else              _setStatus('🟢 Connecté — attente du 2ᵉ joueur…');
+      break;
+
+    // Partenaire parti (avec délai de grâce — pas un reload forcé)
+    case 'partner-left':
+      _setStatus('🔴 Partenaire déconnecté');
+      // Si la partie était en cours, on propose de rejouer sans forcer le reload
+      if (typeof S !== 'undefined' && S.over === null && typeof frame !== 'undefined' && frame > 0) {
+        S.over = 'disconnect';
+      }
+      break;
+
+    // Reset volontaire (bouton Rejouer)
+    case 'reset':
+      location.reload();
+      break;
+
+    case 'inno':
+      Object.assign(S.inno, m.data); break;
+    case 'impo':
+      S.impo.x = m.x; S.impo.y = m.y; S.impo.present = true; break;
+    case 'world':
+      S.tasks = m.tasks; S.sabotageUntil = m.sabotageUntil;
+      S.oxygenUntil = m.oxygenUntil; S.over = m.over; break;
+    case 'attack':
+      if (myRole === 'innocent') applyHit(); break;
+    case 'sabotage':
+      S.sabotageUntil = m.until; break;
+    case 'oxygen':
+      S.oxygenUntil = m.until; break;
+    case 'oxyfix':
+      S.oxygenUntil = 0; break;
+  }
 }
 
-// Fonction d'envoi centrale — toujours passer par ici
 function send(obj) {
   if (localMode) return;
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
-// Wrappers (identiques à l'ancienne version BroadcastChannel)
 function sendInno()          { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive } }); }
 function sendImpo()          { send({ type: 'impo', x: S.impo.x, y: S.impo.y }); }
 function sendWorld()         { send({ type: 'world', tasks: S.tasks, sabotageUntil: S.sabotageUntil, oxygenUntil: S.oxygenUntil, over: S.over }); }
