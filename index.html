@@ -1,36 +1,52 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>Le Vaisseau — V2</title>
-<link rel="stylesheet" href="style.css">
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#070810">
+  <title>Le Vaisseau</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
 
 <div id="menu">
   <h1>🚀 Le Vaisseau</h1>
-  <p>Ouvre cette page dans <b>deux onglets</b>, choisis un rôle dans chacun.<br>
-     Déplacement : <b>flèches</b> ou <b>ZQSD</b> · Action : <b>Espace</b></p>
+  <p>Ouvre ce lien dans deux appareils (ou deux onglets), choisis un rôle dans chacun.</p>
+  <div id="conn-status"></div>
   <div class="btns">
     <button class="b-inno" onclick="start('innocent')">😇 Innocent·e</button>
     <button class="b-impo" onclick="start('imposteur')">😈 Imposteur</button>
   </div>
-  <div id="conn-status" style="font-size:13px;opacity:.7;min-height:18px"></div>
-  <button class="b-local" onclick="startLocal()">🏠 Jouer en local — même clavier</button>
+  <button class="b-local" onclick="startLocal()">🏠 Jouer en local — même écran</button>
   <button class="b-ghost" onclick="resetGame()">↻ Réinitialiser</button>
   <p class="hint">
-    😇 Accomplis les 4 tâches. Espace pour agir. Téléporteurs 🌀 et baie médicale ✚ pour t'en sortir.<br>
-    😈 Approche et frappe (Espace / Entrée en local). Sabote les lumières ou l'O₂.<br>
-    🏠 <b>Local</b> : Innocent = ZQSD + Espace · Imposteur = Flèches + Entrée
+    😇 Accomplis les 4 tâches. Téléporteurs 🌀 et baie médicale ✚ pour t'en sortir.<br>
+    😈 Approche et frappe via le bouton d'action. Sabote les lumières ou l'O₂.
   </p>
 </div>
 
 <div id="stage">
   <canvas id="cv" width="760" height="560"></canvas>
+
+  <!-- HUD -->
   <div id="hud">
-    <div id="hearts">❤️❤️❤️</div>
+    <div id="hearts"></div>
     <div id="hud-right">
       <div class="chip" id="task-chip">Tâches : 0/4</div>
       <div class="chip" id="status-chip"></div>
     </div>
   </div>
-  <div id="power"></div>
+
+  <!-- Bouton d'action central (clavier + tactile) -->
+  <button id="action-btn" onclick="onAction()"></button>
+
+  <!-- Joystick virtuel -->
+  <div id="joystick-zone"><div id="joystick-knob"></div></div>
+
+  <!-- Overlays -->
   <div id="minigame">
     <div id="mg-box">
       <button id="mg-close" onclick="closeMinigame(false)" title="Échap">✕</button>
@@ -45,7 +61,6 @@
   </div>
 </div>
 
-<!-- Scripts chargés dans l'ordre de dépendance (pas d'ES modules : compatibilité file://) -->
 <script src="js/constants.js"></script>
 <script src="js/state.js"></script>
 <script src="js/input.js"></script>
@@ -56,3 +71,6 @@
 <script src="js/hud.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
+<script src="js/touch.js"></script>
+</body>
+</html>

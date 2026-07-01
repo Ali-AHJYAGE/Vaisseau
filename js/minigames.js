@@ -11,10 +11,6 @@ const mg={
 // Nettoyage optionnel enregistré par le mini-jeu actif (ex: rythme)
 let _mgCleanup=null;
 
-// Touche Échap pour quitter un mini-jeu sans valider
-addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&minigameActive) closeMinigame(false);
-});
 
 function openMinigame(task){
   minigameActive=task;
