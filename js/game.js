@@ -16,7 +16,6 @@ function update(){
   if(tpCooldown>0)  tpCooldown--;
 
   if(localMode){
-    // Deux joueurs dans le même onglet — pas de BroadcastChannel
     if(S.inno.alive) moveEnt(S.inno, inputVecInno);
     moveEnt(S.impo, inputVecImpo);
     handleHeal();
@@ -63,60 +62,73 @@ function applyHit(){
 }
 
 // ============================================================
-//  ACTIONS
+//  ACTIONS SÉPARÉES — appelées par les boutons ou par Espace
 // ============================================================
-function onAction(){
-  if(S.over) return;
-  // En mode local, Espace = innocent uniquement
-  if(localMode||myRole==='innocent') innocentAction();
-  else imposteurAction();
-}
 
-// En mode local, Entrée = imposteur
-function onActionImpo(){
-  if(S.over||!localMode) return;
-  imposteurActionLocal();
-}
-
-function innocentAction(){
-  if(minigameActive) return;
+function doTask(){
+  if(S.over||minigameActive) return false;
+  if(!(myRole==='innocent'||localMode)) return false;
   for(const t of TASKS){
-    if(!S.tasks[t.id] && dist(S.inno,t)<40){ openMinigame(t); return; }
+    if(!S.tasks[t.id] && dist(S.inno,t)<40){ openMinigame(t); return true; }
   }
+  return false;
+}
+
+function doTeleport(){
+  if(S.over) return false;
+  if(!(myRole==='innocent'||localMode)) return false;
   for(const tp of TELEPORTS){
     if(dist(S.inno,tp)<40 && tpCooldown<=0){
       const dest=TELEPORTS.find(o=>o.id===tp.link);
-      S.inno.x=dest.x; S.inno.y=dest.y; tpCooldown=45; return;
+      S.inno.x=dest.x; S.inno.y=dest.y; tpCooldown=45; return true;
     }
   }
+  return false;
 }
 
-// Imposteur en mode onglets (via BroadcastChannel)
-function imposteurAction(){
-  if(attackReady<=0 && S.inno.alive && dist(S.impo,S.inno)<ATTACK_RANGE){
-    sendAttack(); attackReady=ATTACK_CD; return;
+function doAttack(){
+  if(S.over) return false;
+  if(attackReady>0 || !S.inno.alive || dist(S.impo,S.inno)>=ATTACK_RANGE) return false;
+  if(localMode){
+    applyHit(); attackReady=ATTACK_CD; return true;
+  } else if(myRole==='imposteur'){
+    sendAttack(); attackReady=ATTACK_CD; return true;
   }
-  if(sabReady<=0){
-    const until=frame+SAB_DURATION;
-    S.sabotageUntil=until; sabReady=SAB_CD;
-    sendSabotage(until); return;
-  }
-  if(oxyReady<=0 && frame>=S.oxygenUntil){
-    const until=frame+OXY_DURATION;
-    S.oxygenUntil=until; oxyReady=OXY_CD;
-    sendOxygen(until);
+  return false;
+}
+
+function doSabLights(){
+  if(S.over||sabReady>0) return false;
+  if(!(myRole==='imposteur'||localMode)) return false;
+  const until=frame+SAB_DURATION;
+  S.sabotageUntil=until; sabReady=SAB_CD;
+  if(!localMode) sendSabotage(until);
+  return true;
+}
+
+function doSabOxy(){
+  if(S.over||oxyReady>0||frame<S.oxygenUntil) return false;
+  if(!(myRole==='imposteur'||localMode)) return false;
+  const until=frame+OXY_DURATION;
+  S.oxygenUntil=until; oxyReady=OXY_CD;
+  if(!localMode) sendOxygen(until);
+  return true;
+}
+
+// ============================================================
+//  ESPACE / ENTRÉE — raccourci clavier (priorité automatique)
+// ============================================================
+function onAction(){
+  if(S.over) return;
+  if(localMode||myRole==='innocent'){
+    doTask() || doTeleport();
+  } else {
+    doAttack() || doSabLights() || doSabOxy();
   }
 }
 
-// Imposteur en mode local (pas de BroadcastChannel)
-function imposteurActionLocal(){
-  if(attackReady<=0 && S.inno.alive && dist(S.impo,S.inno)<ATTACK_RANGE){
-    applyHit(); attackReady=ATTACK_CD; return;
-  }
-  if(sabReady<=0){
-    S.sabotageUntil=frame+SAB_DURATION; sabReady=SAB_CD; return;
-  }
-  if(oxyReady<=0 && frame>=S.oxygenUntil){
-    S.oxygenUntil=frame+OXY_DURATION; oxyReady=OXY_CD;
-  }
+// Entrée = action imposteur en mode local (clavier)
+function onActionImpo(){
+  if(S.over||!localMode) return;
+  doAttack() || doSabLights() || doSabOxy();
 }

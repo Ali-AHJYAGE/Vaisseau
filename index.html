@@ -40,8 +40,14 @@
     </div>
   </div>
 
-  <!-- Bouton d'action central (clavier + tactile) -->
-  <button id="action-btn" onclick="onAction()"></button>
+  <!-- Panneau de boutons d'action -->
+  <div id="action-panel">
+    <button id="btn-task"   class="act-btn" onclick="doTask()">⚙️<br>Tâche</button>
+    <button id="btn-tp"     class="act-btn" onclick="doTeleport()">🌀<br>Téléport</button>
+    <button id="btn-attack" class="act-btn" onclick="doAttack()">⚔️<br>Frapper</button>
+    <button id="btn-sab"    class="act-btn" onclick="doSabLights()">💡<br>Lumières</button>
+    <button id="btn-oxy"    class="act-btn" onclick="doSabOxy()">🔴<br>O₂</button>
+  </div>
 
   <!-- Joystick virtuel -->
   <div id="joystick-zone"><div id="joystick-knob"></div></div>

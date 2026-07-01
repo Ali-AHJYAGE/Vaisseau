@@ -1,12 +1,11 @@
 // ============================================================
-//  CONTRÔLES TACTILES — joystick virtuel + bouton d'action
+//  CONTRÔLES TACTILES — joystick virtuel + panneau d'actions
 // ============================================================
-const KNOB_R = 38;   // rayon max de déplacement du knob
+const KNOB_R = 38;
 
 const jZone = document.getElementById('joystick-zone');
 const jKnob  = document.getElementById('joystick-knob');
 
-// touchVec est défini dans input.js — on le met à jour ici
 function _joystickMove(touch) {
   const r  = jZone.getBoundingClientRect();
   const cx = r.left + r.width  / 2;
@@ -30,8 +29,10 @@ jZone.addEventListener('touchmove',  e => { e.preventDefault(); _joystickMove(e.
 jZone.addEventListener('touchend',   _joystickReset, {passive: true});
 jZone.addEventListener('touchcancel',_joystickReset, {passive: true});
 
-// Bouton d'action : tap = même effet que Espace
-document.getElementById('action-btn').addEventListener('touchstart', e => {
-  e.preventDefault(); // évite le double-tap zoom
-  onAction();
+// Panneau d'actions — délégation : un seul listener pour tous les boutons
+document.getElementById('action-panel').addEventListener('touchstart', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  e.preventDefault(); // supprime le délai 300ms et le zoom double-tap
+  btn.click();
 }, {passive: false});
