@@ -3,6 +3,10 @@
 // ============================================================
 const keys = {};
 const touchVec = {dx: 0, dy: 0}; // mis à jour par touch.js
+let touchSprint = false;         // mis à jour par touch.js (bouton sprint)
+
+// Sprint : Maj (clavier) ou bouton tactile
+function isSprinting(){ return keys['shift'] || touchSprint; }
 
 addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;

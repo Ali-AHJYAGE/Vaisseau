@@ -2,23 +2,29 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#070810">
   <title>Le Vaisseau</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=13">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+
+<!-- Invite à passer en paysage (affichée seulement en portrait sur mobile) -->
+<div id="rotate-hint">
+  <div class="big">📱↻</div>
+  <div>Tourne ton téléphone à l'horizontale</div>
+</div>
 
 <div id="menu">
   <h1>🚀 Le Vaisseau</h1>
   <p>Ouvre ce lien dans deux appareils (ou deux onglets), choisis un rôle dans chacun.</p>
   <div id="conn-status"></div>
   <div class="btns">
-    <button class="b-inno" onclick="start('innocent')">😇 Innocent·e</button>
-    <button class="b-impo" onclick="start('imposteur')">😈 Imposteur</button>
+    <button id="pick-inno" class="b-inno" onclick="pickRole('innocent')">😇 Innocent·e</button>
+    <button id="pick-impo" class="b-impo" onclick="pickRole('imposteur')">😈 Imposteur</button>
   </div>
   <button class="b-local" onclick="startLocal()">🏠 Jouer en local — même écran</button>
   <button class="b-ghost" onclick="resetGame()">↻ Réinitialiser</button>
@@ -37,6 +43,7 @@
     <div id="hud-right">
       <div class="chip" id="task-chip">Tâches : 0/4</div>
       <div class="chip" id="status-chip"></div>
+      <div class="chip" id="score-chip"></div>
     </div>
   </div>
 
@@ -44,13 +51,17 @@
   <div id="action-panel">
     <button id="btn-task"   class="act-btn" onclick="doTask()">⚙️<br>Tâche</button>
     <button id="btn-tp"     class="act-btn" onclick="doTeleport()">🌀<br>Téléport</button>
+    <button id="btn-scan"   class="act-btn" onclick="doScan()">📡<br>Scan</button>
     <button id="btn-attack" class="act-btn" onclick="doAttack()">⚔️<br>Frapper</button>
+    <button id="btn-vent"   class="act-btn" onclick="doVent()">🕳️<br>Vent</button>
     <button id="btn-sab"    class="act-btn" onclick="doSabLights()">💡<br>Lumières</button>
     <button id="btn-oxy"    class="act-btn" onclick="doSabOxy()">🔴<br>O₂</button>
+    <button id="btn-door"   class="act-btn" onclick="doSabDoors()">🚪<br>Portes</button>
   </div>
 
-  <!-- Joystick virtuel -->
+  <!-- Joystick virtuel + sprint -->
   <div id="joystick-zone"><div id="joystick-knob"></div></div>
+  <button id="btn-sprint">⚡</button>
 
   <!-- Overlays -->
   <div id="minigame">
@@ -62,21 +73,25 @@
     </div>
   </div>
   <div id="banner">
-    <h2 id="banner-text"></h2>
-    <button class="b-ghost" onclick="resetGame()">Rejouer</button>
+    <div id="banner-card">
+      <div id="banner-emoji"></div>
+      <h2 id="banner-text"></h2>
+      <p id="banner-sub"></p>
+      <button id="banner-btn" onclick="resetGame()">↻ Rejouer</button>
+    </div>
   </div>
 </div>
 
-<script src="js/constants.js"></script>
-<script src="js/state.js"></script>
-<script src="js/input.js"></script>
-<script src="js/physics.js"></script>
-<script src="js/minigames.js"></script>
-<script src="js/network.js"></script>
-<script src="js/render.js"></script>
-<script src="js/hud.js"></script>
-<script src="js/game.js"></script>
-<script src="js/main.js"></script>
-<script src="js/touch.js"></script>
+<script src="js/constants.js?v=13"></script>
+<script src="js/state.js?v=13"></script>
+<script src="js/input.js?v=13"></script>
+<script src="js/physics.js?v=13"></script>
+<script src="js/minigames.js?v=13"></script>
+<script src="js/network.js?v=13"></script>
+<script src="js/render.js?v=13"></script>
+<script src="js/hud.js?v=13"></script>
+<script src="js/game.js?v=13"></script>
+<script src="js/main.js?v=13"></script>
+<script src="js/touch.js?v=13"></script>
 </body>
 </html>

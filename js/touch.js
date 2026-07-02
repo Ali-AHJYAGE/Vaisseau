@@ -36,3 +36,17 @@ document.getElementById('action-panel').addEventListener('touchstart', e => {
   e.preventDefault(); // supprime le délai 300ms et le zoom double-tap
   btn.click();
 }, {passive: false});
+
+// Bouton sprint — maintenir pour courir
+const _sprintBtn = document.getElementById('btn-sprint');
+if (_sprintBtn) {
+  const on  = e => { e.preventDefault(); touchSprint = true;  _sprintBtn.classList.add('active'); };
+  const off = e => { e.preventDefault(); touchSprint = false; _sprintBtn.classList.remove('active'); };
+  _sprintBtn.addEventListener('touchstart', on,  {passive:false});
+  _sprintBtn.addEventListener('touchend',   off, {passive:false});
+  _sprintBtn.addEventListener('touchcancel',off, {passive:false});
+  // Souris (ordi de test)
+  _sprintBtn.addEventListener('mousedown',  on);
+  _sprintBtn.addEventListener('mouseup',    off);
+  _sprintBtn.addEventListener('mouseleave', off);
+}

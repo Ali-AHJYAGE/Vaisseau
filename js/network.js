@@ -1,8 +1,22 @@
 // ============================================================
-//  RÉSEAU — WebSocket vers le serveur relais
+//  RÉSEAU — WebSocket vers le serveur (v9)
+//  Rôles verrouillés côté serveur, état mis en cache et resynchronisé.
 // ============================================================
 
 let ws = null;
+let _msgCount = 0;
+function wsReady()  { return ws ? ws.readyState : -1; }
+function msgCount() { return _msgCount; }
+
+// Identité stable du client (survit aux reconnexions) — sert au serveur pour
+// reconnaître un joueur qui revient sans le confondre avec un autre onglet.
+const CID = (() => {
+  try {
+    let c = localStorage.getItem('vaisseau-cid');
+    if (!c) { c = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('vaisseau-cid', c); }
+    return c;
+  } catch (_) { return Math.random().toString(36).slice(2); }
+})();
 
 function _setStatus(txt) {
   const el = document.getElementById('conn-status');
@@ -11,65 +25,114 @@ function _setStatus(txt) {
 
 function connectWS() {
   if (location.protocol === 'file:') return;
+  // Jamais deux connexions en parallèle
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
 
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}`);
 
   ws.onopen = () => {
-    _setStatus('🟢 Connecté — attente du 2ᵉ joueur…');
+    _setStatus('🟢 Connecté…');
+    // 1re chose : s'annoncer avec notre identité stable
+    ws.send(JSON.stringify({ type: 'hello', cid: CID }));
+    // Reconnexion en cours de partie : redemander notre rôle
+    if (myRole && !localMode) ws.send(JSON.stringify({ type: 'pick', role: myRole }));
   };
-
-  ws.onmessage = e => {
-    try { handleMessage(JSON.parse(e.data)); } catch(_) {}
-  };
-
-  ws.onclose = () => {
-    ws = null;
-    _setStatus('🔴 Déconnecté — reconnexion…');
-    setTimeout(connectWS, 2000);
-  };
-
-  ws.onerror = () => ws && ws.close();
+  ws.onmessage = e => { try { handleMessage(JSON.parse(e.data)); } catch (err) { console.error('[WS]', err); } };
+  ws.onclose   = () => { ws = null; _setStatus('🔴 Reconnexion…'); setTimeout(connectWS, 1000); };
+  ws.onerror   = () => ws && ws.close();
 }
 
+// Mobile : reconnexion au retour d'arrière-plan / veille
+addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (!ws || ws.readyState > 1)) connectWS();
+});
+
 function handleMessage(m) {
+  _msgCount++;
   switch (m.type) {
-    // Serveur informe du nombre de joueurs connectés
-    case 'players':
-      if (m.count >= 2) _setStatus('🟢 2 joueurs connectés — choisissez un rôle !');
-      else              _setStatus('🟢 Connecté — attente du 2ᵉ joueur…');
+
+    // ── Disponibilité des rôles + nombre de joueurs ──
+    case 'roles':
+      _applyRoles(m);
       break;
 
-    // Partenaire parti (avec délai de grâce — pas un reload forcé)
-    case 'partner-left':
-      _setStatus('🔴 Partenaire déconnecté');
-      // Si la partie était en cours, on propose de rejouer sans forcer le reload
-      if (typeof S !== 'undefined' && S.over === null && typeof frame !== 'undefined' && frame > 0) {
-        S.over = 'disconnect';
-      }
+    // ── Le serveur nous attribue le rôle demandé → on démarre ──
+    case 'assigned':
+      if (!gameStarted) startWithRole(m.role);
       break;
 
-    // Reset volontaire (bouton Rejouer)
+    // ── Rôle déjà pris ──
+    case 'role-taken':
+      if (myRole === m.role) myRole = null; // annuler la préférence refusée
+      _setStatus(`❌ ${m.role === 'imposteur' ? 'Imposteur' : 'Innocent·e'} déjà pris — prends l'autre rôle`);
+      break;
+
+    // ── Reset global ──
     case 'reset':
       location.reload();
       break;
 
+    // ── État de jeu ──
     case 'inno':
-      Object.assign(S.inno, m.data); break;
+      Object.assign(S.inno, m.data); S.inno.synced = true; break;
     case 'impo':
-      S.impo.x = m.x; S.impo.y = m.y; S.impo.present = true; break;
+      S.impo.x = m.x; S.impo.y = m.y; S.impo.present = true;
+      if (m.weapon) S.impo.weapon = m.weapon; break;
     case 'world':
-      S.tasks = m.tasks; S.sabotageUntil = m.sabotageUntil;
-      S.oxygenUntil = m.oxygenUntil; S.over = m.over; break;
+      S.tasks = m.tasks; S.over = m.over; break;
     case 'attack':
-      if (myRole === 'innocent') applyHit(); break;
+      if (myRole === 'innocent') applyHit(m.dmg); break;
     case 'sabotage':
-      S.sabotageUntil = m.until; break;
+      S.sabotageUntil = Date.now() + SAB_DURATION_MS; break;
     case 'oxygen':
-      S.oxygenUntil = m.until; break;
+      S.oxygenUntil = Date.now() + OXY_DURATION_MS; break;
     case 'oxyfix':
       S.oxygenUntil = 0; break;
+    case 'doors':
+      S.doorsUntil = Date.now() + DOOR_DURATION_MS; break;
+
+    // ── Manches / score ──
+    case 'new-round':
+      myWins = m.you; theirWins = m.them;
+      startRound(m.role, m.round);
+      break;
+    case 'match-over':
+      myWins = m.you; theirWins = m.them;
+      S.over = m.youWon ? 'match-win' : 'match-lose';
+      break;
   }
+}
+
+// Applique l'état des rôles au menu (verrouillage) et au statut de connexion
+function _applyRoles(m) {
+  const bi = document.getElementById('pick-inno');
+  const bp = document.getElementById('pick-impo');
+  if (bi && bp && !gameStarted) {
+    _lockButton(bi, m.innocent && myRole !== 'innocent');
+    _lockButton(bp, m.imposteur && myRole !== 'imposteur');
+  }
+
+  if (!gameStarted) {
+    if (m.count >= 2)      _setStatus('🟢 2 joueurs connectés — choisissez un rôle !');
+    else                   _setStatus('🟢 Connecté — en attente du 2ᵉ joueur…');
+  }
+
+  // En jeu : gérer le départ / retour du partenaire (compteur)
+  if (gameStarted && typeof S !== 'undefined') {
+    if (m.count >= 2) {
+      partnerGoneAt = 0; _lastWorld = '';
+      if (S.over === 'disconnect') { S.over = null; const b = document.getElementById('banner'); if (b) b.style.display = 'none'; }
+    } else if (S.over === null && partnerGoneAt === 0 && frame > 0) {
+      partnerGoneAt = frame;
+    }
+  }
+}
+
+function _lockButton(btn, locked) {
+  btn.disabled = locked;
+  btn.style.opacity = locked ? '0.4' : '1';
+  btn.style.pointerEvents = locked ? 'none' : 'auto';
 }
 
 function send(obj) {
@@ -77,12 +140,23 @@ function send(obj) {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
-function sendInno()          { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive } }); }
-function sendImpo()          { send({ type: 'impo', x: S.impo.x, y: S.impo.y }); }
-function sendWorld()         { send({ type: 'world', tasks: S.tasks, sabotageUntil: S.sabotageUntil, oxygenUntil: S.oxygenUntil, over: S.over }); }
-function sendAttack()        { send({ type: 'attack' }); }
-function sendSabotage(until) { send({ type: 'sabotage', until }); }
-function sendOxygen(until)   { send({ type: 'oxygen', until }); }
-function sendOxyFix()        { send({ type: 'oxyfix' }); }
+function sendInno() { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive } }); }
+function sendImpo() { send({ type: 'impo', x: S.impo.x, y: S.impo.y, weapon: S.impo.weapon }); }
+
+// Le monde (tâches, fin) change rarement : on ne l'envoie que s'il change
+let _lastWorld = '';
+function sendWorld() {
+  const w = { type: 'world', tasks: S.tasks, over: S.over };
+  const sig = JSON.stringify(w);
+  if (sig === _lastWorld) return;
+  _lastWorld = sig;
+  send(w);
+}
+
+function sendAttack(dmg){ send({ type: 'attack', dmg: dmg||1 }); }
+function sendSabotage() { send({ type: 'sabotage' }); }
+function sendOxygen()   { send({ type: 'oxygen' }); }
+function sendOxyFix()   { send({ type: 'oxyfix' }); }
+function sendDoors()    { send({ type: 'doors' }); }
 
 connectWS();
