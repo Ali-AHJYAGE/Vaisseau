@@ -13,7 +13,7 @@ const Sfx = (() => {
       master = ac.createGain(); master.gain.value=0.35; master.connect(ac.destination);
     }catch(_){}
     // Musique optionnelle
-    const a = new Audio('assets/music.mp3');
+    const a = new Audio('assets/music.mp3?v=' + (typeof VERSION!=='undefined'?VERSION:'1'));
     a.loop=true; a.volume=0.35;
     a.addEventListener('canplaythrough', ()=>{ music=a; if(musicWanted&&!muted) a.play().catch(()=>{}); }, {once:true});
     a.addEventListener('error', ()=>{});

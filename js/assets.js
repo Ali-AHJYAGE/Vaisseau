@@ -14,7 +14,7 @@ IMG_SLOTS.forEach(name => {
   const img = new Image();
   img.onload  = () => { IMAGES[name] = img; };
   img.onerror = () => {};              // pas de fichier → on garde le rendu par code
-  img.src = 'assets/' + name + '.png';
+  img.src = 'assets/' + name + '.png?v=' + (typeof VERSION!=='undefined'?VERSION:'1');
 });
 
 function hasImg(name){ const i=IMAGES[name]; return !!(i && i.complete && i.naturalWidth>0); }
