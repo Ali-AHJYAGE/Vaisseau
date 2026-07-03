@@ -143,12 +143,14 @@ function drawBean(e,color,dead,slot){
   if(dead){
     if(drawImg(slot+'_dead',x,y-bob,size)) return;  // sinon → bean mort ci-dessous
   } else if(hasImg(slot+'_walk')){
-    // feuille de marche : frame idle à l'arrêt, cycle right/left en mouvement
-    let idx, flip=1;
+    // feuille de marche : idle à l'arrêt, cycle en mouvement, retourné selon le sens
+    let idx, sx=1;
     if(!moving){ idx=SKIN_ANIM.idle; }
-    else if(SKIN_ANIM.flip){ const s=SKIN_ANIM.right; idx=s[Math.floor(frame/SKIN_ANIM.step)%s.length]; flip=e._face; }
-    else { const s=(e._face<0?SKIN_ANIM.left:SKIN_ANIM.right); idx=s[Math.floor(frame/SKIN_ANIM.step)%s.length]; }
-    ctx.save(); ctx.translate(x,y-bob); ctx.scale(flip,1);
+    else {
+      const s=SKIN_ANIM.walk; idx=s[Math.floor(frame/SKIN_ANIM.step)%s.length];
+      sx = SKIN_ANIM.faceRight ? e._face : -e._face;
+    }
+    ctx.save(); ctx.translate(x,y-bob); ctx.scale(sx,1);
     drawSheet(slot+'_walk', idx, 0,0, SKIN_ANIM.dispH, SKIN_ANIM.frames, SKIN_ANIM.yOff);
     ctx.restore(); return;
   } else if(hasImg(slot)){
