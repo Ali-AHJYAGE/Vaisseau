@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v21';
+const VERSION='v22';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -16,11 +16,11 @@ const STAMINA_REGEN=0.7;    // par frame au repos
 // ── Combat ─────────────────────────────────────────────────
 const HEARTS_MAX=3;
 const HEAL_CD=780;          // soin plus lent (~13 s/cœur) — le soin est précieux
-// Armes de l'imposteur (portée en px, dégâts en cœurs, cd en frames)
+// Capacités du CHAT (portée en px, dégâts en cœurs, cd en frames)
 const WEAPON_TYPES={
-  knife:   {name:'Lame',    icon:'🔪', range:46,  dmg:1, cd:70},   // défaut : rapide, courte
-  blaster: {name:'Blaster', icon:'🔫', range:130, dmg:1, cd:170},  // sniper : longue portée, lent
-  cleaver: {name:'Fendoir', icon:'🪓', range:36,  dmg:2, cd:120},  // bourrin : 2 dégâts, très courte
+  knife:   {name:'Griffes', icon:'🐾', range:46,  dmg:1, cd:70},   // défaut : rapide, courte
+  blaster: {name:'Bond',    icon:'💨', range:130, dmg:1, cd:170},  // bond : longue portée, lent
+  cleaver: {name:'Coup de patte', icon:'💥', range:36, dmg:2, cd:120}, // lourd : 2 dégâts, très courte
 };
 
 // ── Sabotages ──────────────────────────────────────────────
@@ -57,14 +57,14 @@ const SKIN_ANIM={ frames:5, idle:0, walk:[1,2,3,4], faceRight:false, step:6, dis
 //  (connectivité vérifiée par test flood-fill — voir scripts)
 // ============================================================
 const ROOMS=[
-  {x: 60, y:120, w:260, h:220, name:'Réacteur'},        // 60-320,   120-340   (exigu, cul-de-sac)
-  {x: 60, y:640, w:320, h:360, name:'Soute'},            // 60-380,   640-1000  (grande, pour semer)
-  {x:520, y: 80, w:520, h:200, name:'Pont'},             // 520-1040, 80-280    (ouvert, exposé)
-  {x:640, y:470, w:360, h:280, name:'Hub'},              // 640-1000, 470-750   (centre)
-  {x:1200,y:120, w:300, h:220, name:'Baie médicale'},    // 1200-1500,120-340   (soin)
-  {x:1300,y:520, w:320, h:240, name:'Communications'},   // 1300-1620,520-760
-  {x:1180,y:920, w:340, h:240, name:'Quartiers'},        // 1180-1520,920-1160
-  {x:560, y:920, w:320, h:220, name:'Stockage'},         // 560-880,  920-1140
+  {x: 60, y:120, w:260, h:220, name:'Cuisine'},          // 60-320,   120-340   (exigu, cul-de-sac)
+  {x: 60, y:640, w:320, h:360, name:'Garde-manger'},     // 60-380,   640-1000  (grande, pour semer)
+  {x:520, y: 80, w:520, h:200, name:'Salle à manger'},   // 520-1040, 80-280    (ouvert, exposé)
+  {x:640, y:470, w:360, h:280, name:'Salon'},            // 640-1000, 470-750   (centre)
+  {x:1200,y:120, w:300, h:220, name:'Chambre'},          // 1200-1500,120-340   (coin repos)
+  {x:1300,y:520, w:320, h:240, name:'Bureau'},           // 1300-1620,520-760
+  {x:1180,y:920, w:340, h:240, name:'Salle de bain'},    // 1180-1520,920-1160
+  {x:560, y:920, w:320, h:220, name:'Buanderie'},        // 560-880,  920-1140
 ];
 
 const HALLS=[
@@ -91,10 +91,10 @@ const ZONES=[...ROOMS,...HALLS];
 
 // ── Tâches (mini-jeux) — placées dans des zones variées/risquées ──
 const TASKS=[
-  {id:'t1', x:170,  y:250,  room:'Réacteur',      type:'wires'},   // cul-de-sac dangereux
-  {id:'t2', x:780,  y:170,  room:'Pont',          type:'code'},    // à découvert
-  {id:'t3', x:1350, y:1040, room:'Quartiers',     type:'memory'},  // coin éloigné
-  {id:'t4', x:700,  y:1030, room:'Stockage',      type:'sort'},    // bas de map
+  {id:'t1', x:170,  y:250,  room:'Cuisine',        type:'wires'},   // cul-de-sac dangereux
+  {id:'t2', x:780,  y:170,  room:'Salle à manger', type:'code'},    // à découvert
+  {id:'t3', x:1350, y:1040, room:'Salle de bain',  type:'memory'},  // coin éloigné
+  {id:'t4', x:700,  y:1030, room:'Buanderie',      type:'sort'},    // bas de map
 ];
 
 // ── Vents : IMPOSTEUR uniquement. Anneau : chaque vent mène au suivant ──

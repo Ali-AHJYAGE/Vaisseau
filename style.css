@@ -1,8 +1,8 @@
 :root {
-  --bg:#0d0f1c; --space:#070810;
-  --wall:#1d2138; --floor:#262c4a; --floor-edge:#313a63; --hall:#2c3358;
-  --innocent:#56e0d0; --imposteur:#f2618f; --task:#ffd84d; --task-done:#74e08a;
-  --heal:#7ad3ff; --teleport:#c08cff; --ink:#eef0ff; --heart:#ff5d6c;
+  --bg:#241a26; --space:#1f1720;
+  --wall:#3a2c34; --floor:#7a5a40; --floor-edge:#b0855a; --hall:#6b4f38;
+  --innocent:#d8d2c8; --imposteur:#e8893e; --task:#ffd84d; --task-done:#8bd46a;
+  --heal:#ffcf4d; --teleport:#c08a5a; --ink:#fff4e4; --heart:#ff5d6c;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
 }
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -25,8 +25,8 @@ button {
 }
 button:hover  { filter:brightness(1.13); }
 button:active { transform:scale(.95); }
-.b-inno  { background:var(--innocent); color:#04302b; }
-.b-impo  { background:var(--imposteur); color:#3a0820; }
+.b-inno  { background:var(--innocent); color:#3a3228; }
+.b-impo  { background:var(--imposteur); color:#3a1e08; }
 .b-local { background:linear-gradient(90deg,var(--innocent),var(--imposteur)); color:#fff; font-size:14px; padding:11px 20px; text-shadow:0 1px 3px rgba(0,0,0,.4); }
 .b-ghost { background:var(--wall); font-size:13px; padding:9px 16px; }
 .hint    { font-size:12px; opacity:.4; max-width:380px; line-height:1.5; }

@@ -5,13 +5,13 @@ const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 const TAU=Math.PI*2;
 
 const C={
-  space:'#0b1030', space2:'#191d47',
-  hall:'#3a4a86', floor:'#3d4f96', floorHi:'#5566bb', edge:'#7f96e8',
-  innocent:'#3fd0c9', imposteur:'#ff5d8f', task:'#ffd23f', taskDone:'#5fe08a',
-  heal:'#5cc8ff', teleport:'#c77dff', vent:'#aab4e8', weapon:'#ffab3d', gadget:'#5cc8ff',
-  visor:'#bfefff', ink:'rgba(230,235,255,0.55)',
+  space:'#241a26', space2:'#3a2b3c',                       // ambiance maison (nuit chaleureuse)
+  hall:'#6b4f38', floor:'#7a5a40', floorHi:'#8f6c4c', edge:'#b0855a', // plancher bois
+  innocent:'#c9c2b6', imposteur:'#e8893e', task:'#ffd23f', taskDone:'#8bd46a', // souris grise / chat roux
+  heal:'#ffcf4d', teleport:'#7a5038', vent:'#5a4432', weapon:'#ff9a4d', gadget:'#7ac8e0',
+  visor:'#ffd9b0', ink:'rgba(255,244,228,0.6)',
 };
-const GADGET_ICON={scanner:'📡', shield:'🛡️'};
+const GADGET_ICON={scanner:'🔔', shield:'📦'};
 
 // Étoiles (parallax) — générées une fois
 const STARS=Array.from({length:130},()=>({x:Math.random()*VIEW_W, y:Math.random()*VIEW_H, z:0.2+Math.random()*0.6, r:Math.random()*1.6+0.4}));
@@ -34,7 +34,7 @@ function draw(){
   const bg=ctx.createLinearGradient(0,0,0,VIEW_H);
   bg.addColorStop(0,C.space2); bg.addColorStop(1,C.space);
   ctx.fillStyle=bg; ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  if(!hasImg('space')) drawStars(cx,cy); else drawImg('space',VIEW_W/2,VIEW_H/2,VIEW_W,VIEW_H);
+  if(!hasImg('space')) drawWallpaper(cx,cy); else drawImg('space',VIEW_W/2,VIEW_H/2,VIEW_W,VIEW_H);
 
   const sh=shakeOffset();
   ctx.save(); ctx.translate(-cx+sh.x,-cy+sh.y);
@@ -66,23 +66,18 @@ function draw(){
   for(const d of DOORS){ rpath(d.x,d.y,d.w,d.h,5); ctx.fillStyle=dShut?'rgba(255,90,110,0.95)':'rgba(150,165,220,0.3)'; ctx.fill();
     if(dShut){ ctx.strokeStyle='#ffd0d6'; ctx.lineWidth=2; ctx.stroke(); } }
 
-  // Zone de soin
-  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,'rgba(92,200,255,.16)');
-  ctx.fillStyle=C.heal; ctx.font='26px sans-serif'; ctx.textAlign='center'; ctx.fillText('✚',HEAL_ZONE.x,HEAL_ZONE.y+9);
+  // Coin repos (fromage — la souris récupère)
+  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,'rgba(255,207,77,.18)');
+  cheeseWheel(HEAL_ZONE.x,HEAL_ZONE.y,16);
 
-  // Panneau O₂
+  // Piège à souris (ex-O₂)
   const oxyOn=Date.now()<S.oxygenUntil;
   if(oxyOn){ const p=Math.sin(frame*0.25)*0.3+0.7; glowCircle(OXY_PANEL.x,OXY_PANEL.y,30,`rgba(255,93,108,${(p*0.5).toFixed(2)})`); }
-  else glowCircle(OXY_PANEL.x,OXY_PANEL.y,20,'rgba(120,140,220,0.18)');
-  ctx.fillStyle=oxyOn?'#ff5d6c':'#9fb0e8'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.fillText('O₂',OXY_PANEL.x,OXY_PANEL.y+6);
+  drawTrap(OXY_PANEL.x,OXY_PANEL.y,oxyOn);
 
-  // Téléporteurs (innocent)
-  if(iAmInno) for(const tp of TELEPORTS){
-    const p=Math.sin(frame*0.1+tp.x)*3;
-    glowCircle(tp.x,tp.y,20,'rgba(199,125,255,.28)');
-    ctx.fillStyle=C.teleport; ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.fillText('🌀',tp.x,tp.y+7+p*0.2);
-  }
-  // Vents (imposteur)
+  // Trous de souris (souris)
+  if(iAmInno) for(const tp of TELEPORTS) drawMouseHole(tp.x,tp.y);
+  // Passages du chat (chat)
   if(iAmImpo) for(const v of VENTS) drawVent(v.x,v.y);
 
   // Pickups
@@ -95,7 +90,9 @@ function draw(){
     if(near){ const p=Math.sin(frame*0.2)*2; glowCircle(t.x,t.y,24+p,'rgba(255,210,63,.18)'); }
     ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=6; ctx.shadowOffsetY=2;
     ctx.beginPath(); ctx.arc(t.x,t.y,16,0,TAU); ctx.fillStyle=done?C.taskDone:C.task; ctx.fill(); ctx.restore();
-    ctx.fillStyle=done?'#0a3018':'#5a4a00'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText(done?'✓':'⚙',t.x,t.y+5);
+    ctx.font='15px sans-serif'; ctx.textAlign='center';
+    if(done){ ctx.fillStyle='#0a3018'; ctx.font='bold 15px sans-serif'; ctx.fillText('✓',t.x,t.y+5); }
+    else ctx.fillText('🧀',t.x,t.y+5);
   }
 
   // Particules (sous les persos)
@@ -117,14 +114,14 @@ function draw(){
   _drawDebug();
 }
 
-function drawStars(cx,cy){
-  ctx.fillStyle='#fff';
-  for(const s of STARS){
-    let x=(s.x - cx*s.z)%VIEW_W; if(x<0)x+=VIEW_W;
-    let y=(s.y - cy*s.z)%VIEW_H; if(y<0)y+=VIEW_H;
-    ctx.globalAlpha=0.3+s.z*0.6; ctx.beginPath(); ctx.arc(x,y,s.r,0,TAU); ctx.fill();
-  }
-  ctx.globalAlpha=1;
+function drawWallpaper(cx,cy){
+  // rayures verticales douces (papier peint) + petits motifs, léger parallax
+  const off=((cx*0.15)%48+48)%48;
+  ctx.fillStyle='rgba(255,255,255,0.02)';
+  for(let x=-off;x<VIEW_W;x+=48) ctx.fillRect(x,0,24,VIEW_H);
+  const ox=((cx*0.15)%64+64)%64, oy=((cy*0.15)%64+64)%64;
+  ctx.fillStyle='rgba(255,215,170,0.05)';
+  for(let y=-oy;y<VIEW_H;y+=64) for(let x=-ox;x<VIEW_W;x+=64){ ctx.beginPath(); ctx.arc(x+32,y+32,2,0,TAU); ctx.fill(); }
 }
 
 // Personnage style Among Us : ombre + corps + visière + rebond + orientation
@@ -164,64 +161,58 @@ function drawBean(e,color,dead,slot){
     drawImg(slot,0,0,size); ctx.restore(); return;
   }
 
-  const cy0=y+bob;
-  if(dead){
-    // bean tombé + yeux ✕
-    ctx.save(); ctx.translate(x,y+4); ctx.rotate(Math.PI/2*0.72);
-    beanBody(0,0,'#7d86a8',e._face); ctx.restore();
-    ctx.fillStyle='#2a2f52'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('✕',x-2,y-2);
-    return;
-  }
-
-  beanBody(x,cy0,color,e._face);
-  // pattes qui gigotent
-  const lw=PLAYER_R*0.42, step=moving?Math.sin(frame*0.35)*2:0;
-  ctx.fillStyle=shade(color,-40);
-  rpath(x-lw-1,cy0+PLAYER_R*0.75+step,lw,7,3); ctx.fill();
-  rpath(x+1,cy0+PLAYER_R*0.75-step,lw,7,3); ctx.fill();
-  // corps par-dessus les pattes déjà dessiné ? on redessine le corps
-  beanBody(x,cy0,color,e._face);
-  // visière
-  const vx=x+e._face*3, vy=cy0-PLAYER_R*0.35;
-  ctx.beginPath(); ctx.ellipse(vx,vy,PLAYER_R*0.62,PLAYER_R*0.44,0,0,TAU);
-  ctx.fillStyle=C.visor; ctx.fill(); ctx.strokeStyle=shade(color,-50); ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(vx+e._face*3,vy-3,3,4,0,0,TAU); ctx.fill();
-
-  // bouclier
-  if(e===S.inno && S.inno.shield>0){
-    ctx.beginPath(); ctx.arc(x,cy0,PLAYER_R+6,0,TAU);
-    ctx.strokeStyle='rgba(92,200,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
+  const cy0=y+bob, isCat=(slot==='imposteur');
+  if(isCat) drawCat(x,cy0,color,e._face,dead); else drawMouse(x,cy0,color,e._face,dead);
+  if(!dead && e===S.inno && S.inno.shield>0){
+    ctx.beginPath(); ctx.arc(x,cy0,PLAYER_R+7,0,TAU); ctx.strokeStyle='rgba(122,200,224,.9)'; ctx.lineWidth=2.5; ctx.stroke();
   }
 }
-function beanBody(x,y,color,face){
-  const w=PLAYER_R*1.5, h=PLAYER_R*2.05;
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=6; ctx.shadowOffsetY=3;
-  ctx.beginPath();
-  ctx.moveTo(x-w/2, y-h/2+w/2);
-  ctx.arc(x, y-h/2+w/2, w/2, Math.PI, 0);
-  ctx.lineTo(x+w/2, y+h/2-w/3);
-  ctx.arc(x, y+h/2-w/3, w/2, 0, Math.PI);
-  ctx.closePath();
-  ctx.fillStyle=color; ctx.fill(); ctx.restore();
-  ctx.strokeStyle=shade(color,-50); ctx.lineWidth=2.5; ctx.stroke();
-  // reflet
-  ctx.fillStyle='rgba(255,255,255,0.18)';
-  ctx.beginPath(); ctx.ellipse(x-face*w*0.18,y-h*0.12,w*0.16,h*0.28,0,0,TAU); ctx.fill();
+function xEye(x,y){ ctx.beginPath(); ctx.moveTo(x-2.5,y-2.5); ctx.lineTo(x+2.5,y+2.5); ctx.moveTo(x+2.5,y-2.5); ctx.lineTo(x-2.5,y+2.5); ctx.stroke(); }
+
+// Souris (par défaut, tant qu'aucun skin fourni)
+function drawMouse(x,y,color,face,dead){
+  const r=PLAYER_R;
+  ctx.strokeStyle=shade(color,-25); ctx.lineWidth=2.5; ctx.beginPath();
+  ctx.moveTo(x-face*r*0.7,y+r*0.5); ctx.quadraticCurveTo(x-face*r*1.7,y+r*0.3,x-face*r*1.5,y-r*0.5); ctx.stroke();
+  for(const s of [-1,1]){ dot2(x+s*r*0.72,y-r*0.72,r*0.55,color); dot2(x+s*r*0.72,y-r*0.72,r*0.3,'#f7b8c8');
+    ctx.strokeStyle=shade(color,-30); ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x+s*r*0.72,y-r*0.72,r*0.55,0,TAU); ctx.stroke(); }
+  dot2(x,y,r,color); ctx.strokeStyle=shade(color,-32); ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.stroke();
+  dot2(x+face*r*0.55,y+r*0.2,r*0.42,shade(color,14));
+  dot2(x+face*r*0.9,y+r*0.2,2.4,'#f7889c');
+  if(dead){ ctx.strokeStyle='#3a2f34'; ctx.lineWidth=2; xEye(x-3,y-r*0.1); xEye(x+6,y-r*0.1); }
+  else { dot2(x-2+face,y-r*0.12,2.1,'#241a22'); dot2(x+6+face,y-r*0.12,2.1,'#241a22'); }
+  ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; for(const dy of [-2,2]){ ctx.beginPath(); ctx.moveTo(x+face*r*0.6,y+r*0.2); ctx.lineTo(x+face*r*1.35,y+r*0.2+dy); ctx.stroke(); }
+}
+
+// Chat (par défaut)
+function drawCat(x,y,color,face,dead){
+  const r=PLAYER_R*1.12;
+  ctx.strokeStyle=shade(color,-22); ctx.lineWidth=3.5; ctx.beginPath();
+  ctx.moveTo(x-face*r*0.7,y+r*0.5); ctx.quadraticCurveTo(x-face*r*1.9,y+r*0.5,x-face*r*1.7,y-r*0.6); ctx.stroke();
+  for(const s of [-1,1]){ ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(x+s*r*0.5,y-r*0.55); ctx.lineTo(x+s*r*1.05,y-r*1.15); ctx.lineTo(x+s*r*0.95,y-r*0.35); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle=shade(color,-30); ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#f7b8c8'; ctx.beginPath(); ctx.moveTo(x+s*r*0.62,y-r*0.6); ctx.lineTo(x+s*r*0.9,y-r*0.95); ctx.lineTo(x+s*r*0.85,y-r*0.5); ctx.closePath(); ctx.fill(); }
+  dot2(x,y,r,color); ctx.strokeStyle=shade(color,-30); ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.stroke();
+  // museau
+  dot2(x+face*r*0.4,y+r*0.28,r*0.36,shade(color,14)); dot2(x+face*r*0.72,y+r*0.24,2.6,'#f7889c');
+  if(dead){ ctx.strokeStyle='#3a2622'; ctx.lineWidth=2; xEye(x-4,y-r*0.05); xEye(x+7,y-r*0.05); }
+  else { dot2(x-3+face,y-r*0.05,2.6,'#2a1c14'); dot2(x+7+face,y-r*0.05,2.6,'#2a1c14');
+    dot2(x-3+face,y-r*0.05-1,1,'#fff'); dot2(x+7+face,y-r*0.05-1,1,'#fff'); }
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; for(const dy of [-3,0,3]){ ctx.beginPath(); ctx.moveTo(x+face*r*0.5,y+r*0.25); ctx.lineTo(x+face*r*1.5,y+r*0.25+dy); ctx.stroke(); }
 }
 
 // ============================================================
 //  DÉCOR THÉMATIQUE PAR SALLE
 // ============================================================
 const ROOM_FLOOR={
-  'Réacteur':      {lo:'#5a3a22', hi:'#7d5230', edge:'#d0862f', ink:'rgba(255,220,180,.7)', light:false},
-  'Soute':         {lo:'#524632', hi:'#6d5b40', edge:'#ad8c52', ink:'rgba(255,240,210,.6)',  light:false},
-  'Pont':          {lo:'#1f2c5a', hi:'#324a8c', edge:'#5f7fd8', ink:'rgba(200,220,255,.75)', light:false},
-  'Hub':           {lo:'#39457e', hi:'#4d5da8', edge:'#7f96e8', ink:'rgba(220,228,255,.7)',  light:false},
-  'Baie médicale': {lo:'#cfe8dd', hi:'#eff9f4', edge:'#7cc3ac', ink:'rgba(24,80,64,.75)',    light:true},
-  'Communications':{lo:'#2b2360', hi:'#443a8c', edge:'#8a7de0', ink:'rgba(224,214,255,.72)', light:false},
-  'Quartiers':     {lo:'#3f2e58', hi:'#57426f', edge:'#9a7dc8', ink:'rgba(235,220,255,.72)', light:false},
-  'Stockage':      {lo:'#2c3a32', hi:'#3d4d44', edge:'#6f8a7a', ink:'rgba(220,235,225,.62)', light:false},
-  _def:            {lo:'#3d4f96', hi:'#5566bb', edge:'#7f96e8', ink:'rgba(230,235,255,.6)',  light:false},
+  'Cuisine':       {lo:'#d3c3a2', hi:'#efe3c6', edge:'#b89b6c', ink:'rgba(90,60,28,.75)',  light:true},  // carrelage
+  'Garde-manger':  {lo:'#6e5236', hi:'#8a663f', edge:'#a8804a', ink:'rgba(255,238,210,.65)',light:false}, // bois
+  'Salle à manger':{lo:'#7a4638', hi:'#9c604a', edge:'#c88050', ink:'rgba(255,232,214,.7)', light:false}, // parquet chaud
+  'Salon':         {lo:'#8a6746', hi:'#a8845a', edge:'#caa066', ink:'rgba(255,238,214,.7)', light:false}, // tapis/bois
+  'Chambre':       {lo:'#7a5876', hi:'#9c7498', edge:'#c492be', ink:'rgba(255,235,250,.72)',light:false}, // moquette
+  'Bureau':        {lo:'#4a5266', hi:'#606a86', edge:'#8a98b6', ink:'rgba(224,232,255,.7)', light:false}, // bois/bleu
+  'Salle de bain': {lo:'#a9cad2', hi:'#d6edf2', edge:'#84b2be', ink:'rgba(20,70,80,.72)',   light:true},  // carrelage bleu
+  'Buanderie':     {lo:'#8c9298', hi:'#b0b6be', edge:'#c6ced6', ink:'rgba(40,50,60,.7)',    light:true},  // carrelage gris
+  _def:            {lo:'#7a5a40', hi:'#8f6c4c', edge:'#b0855a', ink:'rgba(255,240,220,.6)', light:false},
 };
 
 function drawFloorPattern(r,th){
@@ -255,97 +246,111 @@ function locker(x,y,c){ fRR(x-13,y-22,26,44,4,c); oRR(x-13,y-22,26,44,4,shade(c,
   dot2(x-4,y,1.8,'#dfeaff'); dot2(x+4,y,1.8,'#dfeaff'); }
 function hazard(x,y,w,h){ ctx.save(); rpath(x,y,w,h,2); ctx.clip(); for(let i=-h;i<w;i+=12){ ctx.fillStyle=((i/12)|0)%2? '#e6b422':'#20242e'; ctx.beginPath(); ctx.moveTo(x+i,y); ctx.lineTo(x+i+6,y); ctx.lineTo(x+i+6-h,y+h); ctx.lineTo(x+i-h,y+h); ctx.closePath(); ctx.fill(); } ctx.restore(); }
 
+// ── meubles maison ─────────────────────────────────────────
+function cheese(x,y,s){ ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.moveTo(x-s,y+s*0.5); ctx.lineTo(x+s,y+s*0.5); ctx.lineTo(x,y-s*0.6); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#c9a01f'; ctx.lineWidth=1.5; ctx.stroke(); dot2(x-s*0.3,y+s*0.15,1.5,'#f2c024'); dot2(x+s*0.35,y,1.3,'#f2c024'); }
+function cheeseWheel(x,y,r){ dot2(x,y,r,'#ffd23f'); ctx.strokeStyle='#c9a01f'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.stroke();
+  ctx.fillStyle='#f2c024'; ctx.beginPath(); ctx.moveTo(x,y); ctx.arc(x,y,r,-0.6,0.1); ctx.closePath(); ctx.fill(); }
+function plantPot(x,y){ fRR(x-8,y,16,14,3,'#c86a3a'); for(const o of [[-5,-4],[5,-4],[0,-11]]) dot2(x+o[0],y+o[1],7,'#4fbf6a'); }
+function rug(x,y,w,h,c){ ctx.globalAlpha=0.5; fRR(x-w/2,y-h/2,w,h,10,c); ctx.globalAlpha=1; oRR(x-w/2,y-h/2,w,h,10,shade(c,-40),2); }
+function tvSet(x,y,w){ fRR(x-w/2,y-w*0.32,w,w*0.62,4,'#1a1420'); oRR(x-w/2,y-w*0.32,w,w*0.62,4,'#0a0810',2);
+  ctx.save(); rpath(x-w/2+3,y-w*0.32+3,w-6,w*0.62-6,2); ctx.clip(); ctx.globalAlpha=0.5; ctx.fillStyle='#5cc8ff'; ctx.fillRect(x-w/2,y-w*0.32,w,w*0.62); ctx.globalAlpha=1; ctx.restore(); }
+function sofa(x,y,w,c){ fRR(x-w/2,y-20,w,14,6,shade(c,12)); fRR(x-w/2-4,y-16,9,28,4,shade(c,-6)); fRR(x+w/2-5,y-16,9,28,4,shade(c,-6)); fRR(x-w/2,y-8,w,20,6,c); oRR(x-w/2,y-8,w,20,6,shade(c,-40),2); }
+function fridge(x,y){ fRR(x-16,y-30,32,60,5,'#eef2f5'); oRR(x-16,y-30,32,60,5,'#b0bcc8',2); ctx.strokeStyle='#b0bcc8'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x-16,y); ctx.lineTo(x+16,y); ctx.stroke(); fRR(x+9,y-24,3,14,1,'#9aa8b4'); fRR(x+9,y+6,3,14,1,'#9aa8b4'); }
+function stove(x,y){ fRR(x-20,y-16,40,36,4,'#c8ccd2'); oRR(x-20,y-16,40,36,4,'#8a909a',2); for(const o of [[-10,-6],[10,-6],[-10,8],[10,8]]) dot2(x+o[0],y+o[1],5,'#3a3f48'); fRR(x-16,y-16,32,6,2,'#9aa0aa'); }
+function table(x,y,w){ fRR(x-w/2,y-6,w,12,4,'#8a5a3a'); oRR(x-w/2,y-6,w,12,4,'#5e3c26',2); fRR(x-w/2+4,y+4,5,16,1,'#6e4a30'); fRR(x+w/2-9,y+4,5,16,1,'#6e4a30'); }
+function chair(x,y,c){ fRR(x-7,y-4,14,10,2,c); fRR(x-7,y-16,14,12,2,shade(c,12)); }
+function tub(x,y,w){ fRR(x-w/2,y-14,w,30,12,'#eef6fa'); oRR(x-w/2,y-14,w,30,12,'#9cc0cc',2); ctx.globalAlpha=0.6; fRR(x-w/2+5,y-9,w-10,18,8,'#bfe4ee'); ctx.globalAlpha=1; dot2(x-w/2+5,y-10,2,'#88aacc'); }
+function washer(x,y){ fRR(x-16,y-18,32,40,4,'#e6eaee'); oRR(x-16,y-18,32,40,4,'#a8b0ba',2); dot2(x,y+2,11,'#1a2430'); ctx.strokeStyle='#8fb0d0'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y+2,11,0,TAU); ctx.stroke(); const a=frame*0.15; ctx.strokeStyle='rgba(140,200,255,.6)'; ctx.beginPath(); ctx.arc(x,y+2,6,a,a+2); ctx.stroke(); dot2(x-10,y-13,2,'#5fe08a'); dot2(x-4,y-13,2,'#ffd23f'); }
+function shelfFood(x,y,w,h){ fRR(x-w/2,y,w,h,3,'#6e4a2e'); oRR(x-w/2,y,w,h,3,'#4e341f',2); for(let k=1;k<=2;k++){ const yy=y+k*h/3; ctx.strokeStyle='#4e341f'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x-w/2,yy); ctx.lineTo(x+w/2,yy); ctx.stroke(); } cheeseWheel(x-w/4,y+h/6,7); dot2(x+w/6,y+h/6,6,'#e06a4a'); cheeseWheel(x+w/5,y+h/2,6); dot2(x-w/5,y+h/2,5,'#74c86a'); }
+
 function drawRoomScene(r,th){
   const X=r.x,Y=r.y,W=r.w,H=r.h, midX=X+W/2;
   switch(r.name){
 
-    case 'Réacteur': {   // cœur nucléaire + cuves + tuyaux + bandes danger
-      hazard(X+12,Y+H-14,W-24,7);
-      fRR(X+14,Y+36,W-28,7,4,'#5a6699'); fRR(X+14,Y+48,W*0.55,7,4,'#5a6699');
-      for(const cxp of [X+30,X+W-30]){ fRR(cxp-11,Y+H-64,22,40,6,'#6a7099'); oRR(cxp-11,Y+H-64,22,40,6,'#3f4877',2); dot2(cxp,Y+H-54,3,th.accent); }
-      const p=Math.sin(frame*0.08)*0.25+0.75, cxR=midX, cyR=Y+H*0.5;
-      glowCircle(cxR,cyR,32,`rgba(255,140,60,${(p*0.4).toFixed(2)})`);
-      dot2(cxR,cyR,17,'#ff9a3c'); ctx.strokeStyle='#ffd08a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cxR,cyR,17,0,TAU); ctx.stroke();
-      ctx.save(); ctx.translate(cxR,cyR); ctx.rotate(frame*0.02); ctx.strokeStyle='rgba(255,190,120,.7)'; ctx.lineWidth=2;
-      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0,0,25,i*2.1,i*2.1+1.1); ctx.stroke(); } ctx.restore();
+    case 'Cuisine':
+      fridge(X+28,Y+H-34); stove(X+W-32,Y+H-28); table(midX+14,Y+H-22,66);
+      cheese(X+W-58,Y+52,10); plantPot(X+W-22,Y+38);
       break;
-    }
 
-    case 'Soute': {      // caisses/conteneurs empilés + palette
-      crateBox(X+34,Y+52,34,'#b0793f'); crateBox(X+30,Y+90,26,'#9c6a38');
-      crateBox(X+W-40,Y+60,36,'#a9743f'); crateBox(X+W-46,Y+100,24,'#b0793f');
-      crateBox(X+W-34,Y+H-46,30,'#9c6a38');
-      fRR(X+30,Y+H-30,90,10,2,'#6e5638'); // palette
-      fRR(X+50,Y+H-60,54,30,4,'#7a8a52'); oRR(X+50,Y+H-60,54,30,4,'#586636',2); // conteneur vert
+    case 'Garde-manger':
+      shelfFood(X+40,Y+44,52,H-96); shelfFood(X+W-42,Y+44,52,H-96);
+      cheeseWheel(midX,Y+H-42,14); cheese(midX+30,Y+H-38,10);
+      fRR(midX-18,Y+H-24,34,18,4,'#b58a58'); oRR(midX-18,Y+H-24,34,18,4,'#7a5a38',2); // sac
       break;
-    }
 
-    case 'Pont': {       // baie vitrée + planète + consoles pilotes + siège
-      fRR(X+70,Y+14,W-140,34,8,'#070c26');
-      ctx.save(); rpath(X+70,Y+14,W-140,34,8); ctx.clip();
-      ctx.fillStyle='rgba(255,255,255,.85)'; for(let i=0;i<26;i++){ dot2(X+80+((i*83)%(W-160)),Y+18+((i*37)%30),1,'#fff'); }
-      dot2(X+W-130,Y+30,12,'#c77dff'); dot2(X+W-126,Y+26,4,'rgba(255,255,255,.5)'); // planète
-      ctx.restore(); oRR(X+70,Y+14,W-140,34,8,'#5f7fd8',3);
-      screen(X+60,Y+H-56,58,34,'#5cc8ff'); screen(X+W-118,Y+H-56,58,34,'#5fe08a');
-      fRR(midX-16,Y+H-52,32,20,5,'#2f3d70'); fRR(midX-9,Y+H-64,18,16,5,'#3a4a86'); // siège capitaine
-      blinks(midX-14,Y+H-20,4,['#ff5d6c','#ffd23f','#5cc8ff']);
+    case 'Salle à manger':
+      table(midX,Y+H*0.52,150);
+      chair(midX-74,Y+H*0.52,'#8a5a3a'); chair(midX+74,Y+H*0.52,'#8a5a3a');
+      chair(midX-34,Y+H*0.52+22,'#8a5a3a'); chair(midX+34,Y+H*0.52+22,'#8a5a3a');
+      dot2(midX-24,Y+H*0.52-8,6,'#eef4ff'); dot2(midX+24,Y+H*0.52-8,6,'#eef4ff');
+      fRR(midX-2,Y+H*0.52-16,4,10,1,'#fff'); dot2(midX,Y+H*0.52-18,2,'#ffb14d'); // bougie
       break;
-    }
 
-    case 'Hub': {        // console ronde centrale + emblème au sol
-      ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=10; ctx.beginPath(); ctx.arc(midX,Y+H*0.42,60,0,TAU); ctx.stroke();
-      ctx.lineWidth=2; ctx.strokeStyle='rgba(138,211,255,.25)'; ctx.beginPath(); ctx.arc(midX,Y+H*0.42,60,0,TAU); ctx.stroke();
-      const cyH=Y+52; dot2(midX,cyH,20,'#2f3d70'); ctx.strokeStyle='#7f96e8'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(midX,cyH,20,0,TAU); ctx.stroke();
-      const hp=Math.sin(frame*0.1)*0.2+0.8; glowCircle(midX,cyH,14,`rgba(138,211,255,${(hp*0.5).toFixed(2)})`);
-      blinks(midX-30,cyH+30,6,['#8ad3ff','#5fe08a','#ffd23f']);
+    case 'Salon':
+      rug(midX,Y+H*0.56,130,64,'#b5623f'); table(midX,Y+H*0.56,60);
+      sofa(X+64,Y+H-38,84,'#c8683f'); tvSet(X+W-48,Y+58,60);
+      plantPot(X+W-24,Y+H-38);
+      fRR(X+30,Y+42,6,30,2,'#8a6a4a'); dot2(X+33,Y+40,9,'#ffe08a'); // lampe
       break;
-    }
 
-    case 'Baie médicale': {  // 2 lits + moniteurs cardiaques + croix + armoire
-      bed(X+42,Y+H-52,'#cfe0ff'); bed(X+W-44,Y+H-52,'#cfe0ff');
-      screen(X+24,Y+40,50,30,'#ff6b6b'); screen(X+W-74,Y+40,50,30,'#5fe08a');
-      // grande croix médicale
-      ctx.fillStyle='#ff5a66'; fRR(midX-6,Y+30,12,40,3,'#ff5a66'); fRR(midX-20,Y+44,40,12,3,'#ff5a66');
-      // armoire à pharmacie
-      fRR(X+W-40,Y+H-30,30,20,3,'#eaf4ee'); oRR(X+W-40,Y+H-30,30,20,3,'#8fc9b6',2); dot2(X+W-25,Y+H-20,2,'#ff5a66');
+    case 'Chambre':
+      bed(X+52,Y+H-46,'#d8a0c8'); locker(X+W-40,Y+H-44,'#a07850'); // lit + armoire
+      rug(midX,Y+H*0.5,96,46,'#b57fae'); plantPot(X+34,Y+44);
+      fRR(X+W-84,Y+H-40,16,16,2,'#8a6a4a'); dot2(X+W-76,Y+H-46,7,'#ffe08a'); // chevet+lampe
       break;
-    }
 
-    case 'Communications': { // grande parabole + baies serveurs + écrans signal
-      ctx.save(); ctx.translate(X+W-46,Y+56); ctx.rotate(-0.5);
-      fRR(-4,0,8,26,3,'#5a6699');
-      ctx.beginPath(); ctx.arc(0,0,22,Math.PI*0.12,Math.PI*0.88,false); ctx.lineTo(0,0); ctx.closePath(); ctx.fillStyle='#aab4e8'; ctx.fill(); ctx.strokeStyle='#8a7de0'; ctx.lineWidth=2; ctx.stroke();
-      dot2(-6,-6,3,'#ff5d6c'); ctx.restore();
-      for(const sx of [X+28,X+58]){ fRR(sx-11,Y+H-70,22,54,4,'#241d50'); oRR(sx-11,Y+H-70,22,54,4,'#5a4d9a',2);
-        for(let k=0;k<5;k++) blinks(sx-7,Y+H-58+k*11,3,['#5fe08a','#c77dff','#ffd23f']); }
-      screen(X+W-92,Y+H-52,58,34,'#c77dff');
+    case 'Bureau':
+      fRR(X+28,Y+H-46,84,14,3,'#6e4a30'); oRR(X+28,Y+H-46,84,14,3,'#4e341f',2); // bureau
+      screen(X+52,Y+H-72,40,26,'#7ac8e0'); chair(X+70,Y+H-24,'#3a4658');
+      fRR(X+W-46,Y+42,34,H-96,3,'#6e4a30'); oRR(X+W-46,Y+42,34,H-96,3,'#4e341f',2); // bibliothèque
+      for(let k=0;k<4;k++) fRR(X+W-59+k*7,Y+58,5,22,1,['#e06a4a','#5fbf6a','#5c8fe0','#ffd23f'][k]);
+      plantPot(X+W-24,Y+H-38);
       break;
-    }
 
-    case 'Quartiers': {   // lits + casiers + tapis + lampe + poster
-      bed(X+40,Y+52,'#6a5a9a'); bed(X+W-44,Y+52,'#6a5a9a');
-      locker(X+30,Y+H-46,'#5a4a80'); locker(X+58,Y+H-46,'#5a4a80');
-      ctx.globalAlpha=0.5; fRR(midX-30,Y+H-40,80,34,10,'#8a5a4a'); ctx.globalAlpha=1; // tapis
-      fRR(X+W-40,Y+H-58,6,30,2,'#6f86d8'); dot2(X+W-37,Y+H-58,7,'#ffd23f'); // lampe
-      fRR(X+W-70,Y+28,26,18,2,'#c77dff'); oRR(X+W-70,Y+28,26,18,2,'#8a7de0',1.5); // poster
+    case 'Salle de bain':
+      tub(X+W-52,Y+H-38,80);
+      fRR(X+34,Y+H-42,30,16,4,'#eef6fa'); oRR(X+34,Y+H-42,30,16,4,'#9cc0cc',2); dot2(X+49,Y+H-35,4,'#bfe4ee'); // lavabo
+      fRR(X+34,Y+50,22,22,7,'#eef6fa'); oRR(X+34,Y+50,22,22,7,'#9cc0cc',2); // WC
+      fRR(X+78,Y+34,26,20,3,'#cfeef8'); oRR(X+78,Y+34,26,20,3,'#8fbfcc',2); // miroir
       break;
-    }
 
-    case 'Stockage': {    // étagères garnies + fûts + caisses
-      for(const sx of [X+34,X+W-40]){ fRR(sx-15,Y+40,30,H-80,3,'#3a473f'); oRR(sx-15,Y+40,30,H-80,3,'#5f7a6a',2);
-        for(let k=0;k<3;k++){ ctx.strokeStyle='#5f7a6a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(sx-15,Y+40+(k+1)*(H-80)/4); ctx.lineTo(sx+15,Y+40+(k+1)*(H-80)/4); ctx.stroke();
-          dot2(sx-6,Y+40+(k)*(H-80)/4+18,4,['#b0793f','#74e08a','#5cc8ff'][k%3]); dot2(sx+6,Y+40+(k)*(H-80)/4+18,4,'#a9743f'); } }
-      crateBox(midX,Y+H-40,30,'#9c6a38');
-      fRR(midX+26,Y+H-52,22,28,6,'#d98a3f'); oRR(midX+26,Y+H-52,22,28,6,'#8a5222',2); // fût
+    case 'Buanderie':
+      washer(X+42,Y+H-38); washer(X+84,Y+H-38);
+      fRR(midX+38,Y+H-32,26,22,4,'#c8a86a'); oRR(midX+38,Y+H-32,26,22,4,'#8a6a3a',2); // panier
+      dot2(midX+34,Y+H-38,5,'#e06a6a'); dot2(midX+46,Y+H-40,5,'#5c8fe0');
+      ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(X+20,Y+42); ctx.lineTo(X+W-20,Y+50); ctx.stroke();
+      for(let k=0;k<3;k++) fRR(X+60+k*58-6,Y+46+k*3,12,16,2,['#e06a6a','#5c8fe0','#5fbf6a'][k]); // linge
       break;
-    }
   }
 }
 
+// Passage du chat : trappe/gap sombre avec empreinte de patte
 function drawVent(x,y){
-  rpath(x-13,y-13,26,26,6); ctx.fillStyle='#20264a'; ctx.fill(); ctx.strokeStyle=C.vent; ctx.lineWidth=2; ctx.stroke();
-  ctx.strokeStyle=C.vent; ctx.lineWidth=1.6;
-  for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(x-8,y+i*6); ctx.lineTo(x+8,y+i*6); ctx.stroke(); }
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(x,y,15,12,0,0,TAU); ctx.fillStyle='#1c130e'; ctx.fill();
+  ctx.strokeStyle=shade(C.imposteur,-10); ctx.lineWidth=2.5; ctx.stroke();
+  // empreinte de patte
+  ctx.fillStyle='rgba(232,137,62,0.85)'; dot2(x,y+1,3.4); for(const o of [[-4,-4],[0,-5],[4,-4]]) dot2(x+o[0],y+o[1]-1,1.5,'rgba(232,137,62,0.85)');
+  ctx.restore();
+}
+// Trou de souris : arche noire dans la plinthe
+function drawMouseHole(x,y){
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(x-14,y+9); ctx.lineTo(x-14,y-2); ctx.arc(x,y-2,14,Math.PI,0); ctx.lineTo(x+14,y+9); ctx.closePath();
+  ctx.fillStyle='#140d0a'; ctx.fill(); ctx.strokeStyle=shade(C.teleport,20); ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='rgba(255,235,210,0.12)'; ctx.beginPath(); ctx.ellipse(x,y+3,8,4,0,0,TAU); ctx.fill();
+  ctx.restore();
+}
+// Piège à souris : socle bois + barre métallique + appât
+function drawTrap(x,y,armed){
+  fRR(x-16,y-9,32,18,3,'#b58a52'); oRR(x-16,y-9,32,18,3,'#7a5a30',2);
+  ctx.strokeStyle=armed?'#ff5d6c':'#c8ccd2'; ctx.lineWidth=3;
+  ctx.beginPath();
+  if(armed){ ctx.moveTo(x-12,y+6); ctx.lineTo(x-12,y-14); ctx.lineTo(x+10,y-14); } // barre armée (relevée)
+  else { ctx.moveTo(x-12,y+6); ctx.lineTo(x+12,y+6); }                              // barre à plat
+  ctx.stroke();
+  dot2(x+8,y-1,3,'#ffd23f'); // appât (fromage)
 }
 function drawPickup(x,y,icon,ring){
   const p=Math.sin(frame*0.12)*2.5;

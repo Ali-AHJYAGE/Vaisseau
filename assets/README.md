@@ -5,10 +5,12 @@ le rendu généré par le jeu (aucun code à toucher). Envoie-les moi et je les
 commit, ou ajoute-les toi-même et pousse sur GitHub (Render redéploie seul).
 
 ## Images (PNG transparent conseillé)
+> Rôles : **`innocent` = la SOURIS 🐭**, **`imposteur` = le CHAT 🐱** (noms de fichiers inchangés).
+
 | Fichier              | Rôle                                   | Taille conseillée |
 |----------------------|----------------------------------------|-------------------|
-| `innocent.png`       | Sprite de l'innocent (vue du dessus)   | ~128×128          |
-| `imposteur.png`      | Sprite de l'imposteur                  | ~128×128          |
+| `innocent.png`       | Sprite de la SOURIS (vue du dessus)    | ~128×128          |
+| `imposteur.png`      | Sprite du CHAT                         | ~128×128          |
 | `innocent_dead.png`  | Innocent mort (optionnel)              | ~128×128          |
 | `imposteur_dead.png` | Imposteur mort (optionnel)             | ~128×128          |
 | `space.png`          | Fond spatial (remplace les étoiles)    | 760×560           |

@@ -65,7 +65,7 @@ function handleMessage(m) {
     // ── Rôle déjà pris ──
     case 'role-taken':
       if (myRole === m.role) myRole = null; // annuler la préférence refusée
-      _setStatus(`❌ ${m.role === 'imposteur' ? 'Imposteur' : 'Innocent·e'} déjà pris — prends l'autre rôle`);
+      _setStatus(`❌ ${m.role === 'imposteur' ? 'Le chat' : 'La souris'} est déjà pris·e — prends l'autre`);
       break;
 
     // ── Reset global ──
@@ -119,7 +119,7 @@ function _applyRoles(m) {
   }
 
   if (!gameStarted) {
-    if (m.count >= 2)      _setStatus('🟢 2 joueurs connectés — choisissez un rôle !');
+    if (m.count >= 2)      _setStatus('🟢 2 joueurs — choisissez souris ou chat !');
     else                   _setStatus('🟢 Connecté — en attente du 2ᵉ joueur…');
   }
 

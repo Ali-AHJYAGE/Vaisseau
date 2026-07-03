@@ -19,16 +19,16 @@ function drawHud(){
   const hearts='❤️'.repeat(Math.max(0,S.inno.hearts))+'🖤'.repeat(Math.max(0,HEARTS_MAX-S.inno.hearts));
   document.getElementById('hearts').textContent=(myRole==='innocent'||localMode)?hearts:'';
 
-  // Chip tâches
+  // Chip fromages (tâches)
   const done=Object.values(S.tasks).filter(Boolean).length;
-  document.getElementById('task-chip').textContent=`Tâches : ${done}/4`;
+  document.getElementById('task-chip').textContent=`🧀 ${done}/4`;
 
-  // Chip statut (O₂ / lumières / portes)
+  // Chip statut (piège / noir / portes)
   const st=document.getElementById('status-chip');
   const now=Date.now();
-  if(now<S.oxygenUntil){ st.textContent=`🚨 O₂ — ${Math.ceil((S.oxygenUntil-now)/1000)}s`; st.style.color='#ff5d6c'; }
+  if(now<S.oxygenUntil){ st.textContent=`🪤 Piège — ${Math.ceil((S.oxygenUntil-now)/1000)}s`; st.style.color='#ff5d6c'; }
   else if(now<S.doorsUntil){ st.textContent='🚪 Portes closes'; st.style.color='#ffb14d'; }
-  else if(now<S.sabotageUntil){ st.textContent='⚡ Lumières'; st.style.color='#c8cdf0'; }
+  else if(now<S.sabotageUntil){ st.textContent='🌑 Panne de courant'; st.style.color='#c8cdf0'; }
   else { st.textContent=''; st.style.color=''; }
 
   // Chip score (manches) + arme
@@ -48,7 +48,7 @@ function drawHud(){
     ctx.fillStyle='#fff'; ctx.font='800 30px sans-serif'; ctx.textAlign='center';
     ctx.fillText(`Manche ${roundNum}`,VIEW_W/2,VIEW_H/2-4);
     ctx.font='700 15px sans-serif'; ctx.fillStyle=myRole==='imposteur'?C.imposteur:C.innocent;
-    ctx.fillText(myRole==='imposteur'?'😈 Tu es l\'IMPOSTEUR':'😇 Tu es l\'INNOCENT·E',VIEW_W/2,VIEW_H/2+24);
+    ctx.fillText(myRole==='imposteur'?'🐱 Tu es le CHAT':'🐭 Tu es la SOURIS',VIEW_W/2,VIEW_H/2+24);
     ctx.restore();
   }
 }
@@ -61,10 +61,10 @@ function _updateActionPanel(){
     _hide(_btnAttack);_hide(_btnVent);_hide(_btnSab);_hide(_btnOxy);_hide(_btnDoor);
 
     const nearTask=TASKS.some(t=>!S.tasks[t.id]&&dist(S.inno,t)<44);
-    _show(_btnTask,'act-btn act-inno'+(nearTask?' ready':''),'<span class="ico">⚙️</span>Tâche');
+    _show(_btnTask,'act-btn act-inno'+(nearTask?' ready':''),'<span class="ico">🧀</span>Grignoter');
     const nearTP=TELEPORTS.some(tp=>dist(S.inno,tp)<44&&tpCooldown<=0);
-    _show(_btnTp,'act-btn act-tp'+(nearTP?' ready':''),'<span class="ico">🌀</span>Téléport');
-    if(scanCharges>0) _show(_btnScan,'act-btn act-scan ready','<span class="ico">📡</span>Scan');
+    _show(_btnTp,'act-btn act-tp'+(nearTP?' ready':''),'<span class="ico">🕳️</span>Trou');
+    if(scanCharges>0) _show(_btnScan,'act-btn act-scan ready','<span class="ico">🔔</span>Clochette');
     else _hide(_btnScan);
 
   } else {
@@ -76,20 +76,20 @@ function _updateActionPanel(){
     const atkRdy=attackReady<=0&&inRange;
     const atkSecs=attackReady>0?Math.ceil(attackReady/60):0;
     _show(_btnAttack,'act-btn act-impo'+(atkRdy?' ready':''),
-      `<span class="ico">${wp.icon}</span>${atkRdy?'Frapper':atkSecs?atkSecs+'s':'Trop loin'}`);
+      `<span class="ico">${wp.icon}</span>${atkRdy?'Attaquer':atkSecs?atkSecs+'s':'Trop loin'}`);
 
-    // Vent
+    // Passage du chat
     const nearVent=VENTS.some(v=>dist(S.impo,v)<44&&ventCooldown<=0);
-    _show(_btnVent,'act-btn act-vent'+(nearVent?' ready':''),'<span class="ico">🕳️</span>Vent');
+    _show(_btnVent,'act-btn act-vent'+(nearVent?' ready':''),'<span class="ico">🐾</span>Passage');
 
-    // Lumières
+    // Éteindre
     const sabRdy=sabReady<=0, sabSecs=sabReady>0?Math.ceil(sabReady/60):0;
-    _show(_btnSab,'act-btn act-impo'+(sabRdy?' ready':''),`<span class="ico">💡</span>${sabRdy?'Lumières':sabSecs+'s'}`);
+    _show(_btnSab,'act-btn act-impo'+(sabRdy?' ready':''),`<span class="ico">💡</span>${sabRdy?'Éteindre':sabSecs+'s'}`);
 
-    // O₂
+    // Piège
     const oxyActif=now<S.oxygenUntil, oxyRdy=oxyReady<=0&&!oxyActif;
     const oxySecs=oxyReady>0?Math.ceil(oxyReady/60):oxyActif?Math.ceil((S.oxygenUntil-now)/1000):0;
-    _show(_btnOxy,'act-btn act-impo'+(oxyRdy?' ready':''),`<span class="ico">🔴</span>${oxyRdy?'O₂':oxyActif?'Actif '+oxySecs+'s':oxySecs+'s'}`);
+    _show(_btnOxy,'act-btn act-impo'+(oxyRdy?' ready':''),`<span class="ico">🪤</span>${oxyRdy?'Piège':oxyActif?'Actif '+oxySecs+'s':oxySecs+'s'}`);
 
     // Portes
     const doorRdy=doorReady<=0, doorSecs=doorReady>0?Math.ceil(doorReady/60):0;
@@ -110,14 +110,14 @@ function drawBanner(){
   else if(S.over==='match-win'){ cls='b-win-inno'; em='🏆'; title='MATCH GAGNÉ !'; subtitle=`Tu remportes le match ${myWins}–${theirWins}. Belle partie !`; btnTxt='↻ Nouveau match'; }
   else if(S.over==='match-lose'){ cls='b-lose'; em='💀'; title='MATCH PERDU'; subtitle=`Défaite ${theirWins}–${myWins}… la revanche ?`; btnTxt='↻ Nouveau match'; }
   else if(localMode){
-    if(S.over==='innocent'){ cls='b-win-inno'; em='😇'; title='Innocents gagnent !'; subtitle='Les 4 tâches sont accomplies.'; }
-    else { cls='b-win-impo'; em='😈'; title='Imposteur gagne !'; subtitle='Le vaisseau est sabordé.'; }
+    if(S.over==='innocent'){ cls='b-win-inno'; em='🐭'; title='La souris gagne !'; subtitle='Tous les fromages sont grignotés.'; }
+    else { cls='b-win-impo'; em='🐱'; title='Le chat gagne !'; subtitle='La souris s\'est fait attraper.'; }
   } else {
     const iWon=(S.over===myRole);
-    em=iWon?'🏆':'💀'; title=iWon?'MANCHE GAGNÉE !':'MANCHE PERDUE';
+    em=iWon?'🏆':(myRole==='innocent'?'🐭':'🐱'); title=iWon?'MANCHE GAGNÉE !':'MANCHE PERDUE';
     subtitle=`Score : ${myWins}–${theirWins}. `+(S.over==='innocent'
-      ? (iWon?'Tâches accomplies — équipage sauvé !':'L\'innocent·e a tout terminé à temps.')
-      : (iWon?'Vaisseau sabordé — l\'équipage n\'est plus.':'L\'imposteur a eu ta peau…'));
+      ? (iWon?'Tous les fromages grignotés — la souris file !':'La souris a tout grignoté à temps.')
+      : (iWon?'Miam ! La souris est attrapée.':'Le chat t\'a eue…'));
     subtitle+=' Manche suivante…';
     cls=iWon?(S.over==='innocent'?'b-win-inno':'b-win-impo'):'b-lose';
     btnTxt='Abandonner';
