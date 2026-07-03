@@ -61,5 +61,7 @@ const Sfx = (() => {
     pickup:  ()=>{ tone(700,0.08,'triangle',0.2); tone(1050,0.1,'triangle',0.2,null,0.07); },
     win:     ()=>[523,659,784,1047].forEach((f,i)=>tone(f,0.22,'triangle',0.3,null,i*0.13)),
     lose:    ()=>[440,330,220].forEach((f,i)=>tone(f,0.28,'sawtooth',0.28,null,i*0.15)),
+    alarm:   ()=>{ tone(900,0.16,'square',0.3,660); tone(660,0.16,'square',0.3,900,0.17); }, // sirène 2 tons
+    whoosh:  ()=>{ noise(0.18,0.28); tone(260,0.22,'sine',0.22,760); },                       // bond
   };
 })();

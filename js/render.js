@@ -66,9 +66,12 @@ function draw(){
   for(const d of DOORS){ rpath(d.x,d.y,d.w,d.h,5); ctx.fillStyle=dShut?'rgba(255,90,110,0.95)':'rgba(150,165,220,0.3)'; ctx.fill();
     if(dShut){ ctx.strokeStyle='#ffd0d6'; ctx.lineWidth=2; ctx.stroke(); } }
 
-  // Coin repos (fromage — la souris récupère)
-  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,'rgba(255,207,77,.18)');
-  cheeseWheel(HEAL_ZONE.x,HEAL_ZONE.y,16);
+  // Coin fromage — la souris y regagne une vie
+  const hpz=Math.sin(frame*0.12)*0.15+0.85;
+  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,`rgba(255,207,77,${(hpz*0.22).toFixed(2)})`);
+  fRR(HEAL_ZONE.x-26,HEAL_ZONE.y+2,52,18,9,'#c88a5a'); oRR(HEAL_ZONE.x-26,HEAL_ZONE.y+2,52,18,9,'#8a5a30',2.5);
+  cheeseWheel(HEAL_ZONE.x-9,HEAL_ZONE.y-2,12); cheese(HEAL_ZONE.x+13,HEAL_ZONE.y-3,9);
+  ctx.font='15px sans-serif'; ctx.textAlign='center'; ctx.fillText('❤️',HEAL_ZONE.x,HEAL_ZONE.y-24+Math.sin(frame*0.1)*3);
 
   // Piège à souris (ex-O₂)
   const oxyOn=Date.now()<S.oxygenUntil;
@@ -107,6 +110,7 @@ function draw(){
   if(!localMode) drawFog(cx,cy);
   drawScanReveal(cx,cy);
   drawFlash();
+  drawAlarm();
   drawMinimap();
   drawStamina();
   drawHud();
@@ -366,6 +370,22 @@ function drawScanReveal(cx,cy){
   const sx=S.impo.x-cx, sy=S.impo.y-cy, p=Math.sin(frame*0.3)*3+10;
   ctx.beginPath(); ctx.arc(sx,sy,p+8,0,TAU); ctx.strokeStyle='rgba(92,200,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
   ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText('😈',sx,sy+6);
+}
+
+// État d'alerte plein écran pendant un sabotage dangereux
+function drawAlarm(){
+  const now=Date.now();
+  const trapOn=now<S.oxygenUntil, darkOn=now<S.sabotageUntil&&(myRole==='innocent'||localMode);
+  if(!trapOn && !darkOn) return;
+  const p=Math.sin(frame*0.25)*0.5+0.5;
+  ctx.save();
+  ctx.strokeStyle=`rgba(255,60,70,${(0.35+p*0.5).toFixed(2)})`; ctx.lineWidth=12;
+  ctx.strokeRect(6,6,VIEW_W-12,VIEW_H-12);
+  ctx.globalAlpha=0.55+p*0.4; ctx.fillStyle='#ff3b46'; ctx.font='800 22px sans-serif'; ctx.textAlign='center';
+  ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=4;
+  const txt=trapOn?'⚠ PIÈGE ARMÉ !':'⚠ PANNE DE COURANT';
+  ctx.strokeText(txt,VIEW_W/2,VIEW_H-56); ctx.fillText(txt,VIEW_W/2,VIEW_H-56);
+  ctx.restore();
 }
 
 function drawStamina(){

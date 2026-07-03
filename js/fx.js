@@ -15,18 +15,28 @@ function burst(x,y,color){ emit(x,y,color,14,3.2,34); }
 function puff(x,y){ emit(x,y,'rgba(180,190,230,0.9)',12,2.4,26); }
 function sparkle(x,y,color){ emit(x,y,color,8,1.8,30); }
 
+// Textes flottants (ex: +1 ❤️)
+const floaters = [];
+function floatText(x,y,text,color){ floaters.push({ x,y, text, color, life:60, max:60 }); }
+
 function updateFX(){
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
     p.x+=p.vx; p.y+=p.vy; p.vx*=0.92; p.vy*=0.92; p.vy+=0.04; p.life--;
     if(p.life<=0) particles.splice(i,1);
   }
+  for(let i=floaters.length-1;i>=0;i--){ const f=floaters[i]; f.y-=0.6; f.life--; if(f.life<=0) floaters.splice(i,1); }
 }
 function drawParticles(){   // appelé dans le repère MONDE
   for(const p of particles){
     ctx.globalAlpha=Math.max(0,p.life/p.max);
     ctx.fillStyle=p.color;
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+  for(const f of floaters){
+    ctx.globalAlpha=Math.max(0,f.life/f.max);
+    ctx.fillStyle=f.color; ctx.font='800 15px sans-serif'; ctx.textAlign='center';
+    ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=3; ctx.strokeText(f.text,f.x,f.y); ctx.fillText(f.text,f.x,f.y);
   }
   ctx.globalAlpha=1;
 }

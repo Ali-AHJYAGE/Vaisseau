@@ -43,8 +43,8 @@ function mgFail(msg){
 
 // ── Câblage : relier couleurs gauche → droite ─────────────────
 function buildWires(task){
-  mg.title.textContent='🔌 Câblage';
-  mg.desc.textContent='Clique une couleur à gauche, puis sa jumelle à droite.';
+  mg.title.textContent='🧀 Fils grignotés';
+  mg.desc.textContent='Relie chaque fil rongé à sa couleur jumelle.';
   const cols=['#ff5d6c','#56e0d0','#ffd84d','#c08cff'];
   const right=[...cols].sort(()=>Math.random()-0.5);
   mg.area.innerHTML='';
@@ -82,7 +82,7 @@ function buildWires(task){
 
 // ── Code d'accès : mémoriser puis reproduire ─────────────────
 function buildCode(task){
-  mg.title.textContent='🔢 Code d\'accès';
+  mg.title.textContent='🔐 Coffre à biscuits';
   mg.desc.textContent='Mémorise la séquence…';
   const seq=Array.from({length:4},()=>1+Math.floor(Math.random()*9));
   mg.area.innerHTML=`<div style="font-size:34px;letter-spacing:10px;font-weight:800">${seq.join(' ')}</div>`;
@@ -110,7 +110,7 @@ function buildCode(task){
 
 // ── Mémoire (Simon) : répéter la séquence lumineuse ──────────
 function buildMemory(task){
-  mg.title.textContent='🧠 Séquence mémoire';
+  mg.title.textContent='🧠 Cachette des miettes';
   mg.desc.textContent='Regarde bien l\'ordre…';
   const colors=['#ff5d6c','#56e0d0','#ffd84d','#c08cff'];
   const seq=Array.from({length:4},()=>Math.floor(Math.random()*4));
@@ -153,8 +153,8 @@ function buildMemory(task){
 
 // ── Tri de données : cliquer les nombres dans l'ordre croissant ─
 function buildSort(task){
-  mg.title.textContent='📊 Tri de données';
-  mg.desc.textContent='Clique les valeurs dans l\'ordre croissant (du plus petit au plus grand).';
+  mg.title.textContent='🧀 Trier les fromages';
+  mg.desc.textContent='Clique les fromages du plus petit au plus grand.';
   const count=6;
   const nums=Array.from({length:count},()=>5+Math.floor(Math.random()*90));
   const sorted=[...nums].sort((a,b)=>a-b);
@@ -185,7 +185,7 @@ function buildSort(task){
 
 // ── Rythme : appuie sur Espace en cadence avec les flashs ─────
 function buildRhythm(task){
-  mg.title.textContent='🎵 Synchronisation';
+  mg.title.textContent='🎵 Trottiner en rythme';
   mg.desc.textContent='Appuie sur Espace exactement sur chaque flash !';
   const INTERVAL=700, TOLERANCE=160, ROUNDS=4;
   let hits=0, lastFlash=null, timerRef=null;

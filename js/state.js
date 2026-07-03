@@ -26,6 +26,9 @@ let partnerGoneAt = 0;
 // Endurance / sprint (joueur local)
 let stamina = STAMINA_MAX;
 
+// Bond du chat (élan)
+let dashFrames = 0, dashVX = 0, dashVY = 0;
+
 // Innocent — gadgets
 let scanUntil = 0;        // révèle l'imposteur jusqu'à ce timestamp
 let scanCharges = 0;      // charges de scanner ramassées

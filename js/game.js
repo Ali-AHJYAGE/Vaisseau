@@ -20,6 +20,11 @@ function update(){
   if(ventCooldown>0)ventCooldown--;
   if(tpCooldown>0)  tpCooldown--;
 
+  // Sirène d'alerte pendant un sabotage dangereux
+  const now=Date.now();
+  const trapOn=now<S.oxygenUntil, darkOn=now<S.sabotageUntil&&(myRole==='innocent'||localMode);
+  if((trapOn||darkOn) && frame%44===0 && typeof Sfx!=='undefined') Sfx.alarm();
+
   if(localMode){
     moveLocal();
   } else if(myRole==='innocent'){
@@ -27,9 +32,22 @@ function update(){
     handleHeal(); handleOxyRepair(); handleInnoPickups(); checkWin();
     if(frame%NET_EVERY===0){ sendInno(); sendWorld(); }
   } else {
-    moveEnt(S.impo, inputVec, localSpeed(inputVec), false);
+    moveImpo();
     handleImpoPickups();
     if(frame%NET_EVERY===0) sendImpo();
+  }
+}
+
+// Déplacement du chat : élan (bond) prioritaire, sinon marche normale
+function moveImpo(){
+  if(dashFrames>0){
+    const nx=S.impo.x+dashVX, ny=S.impo.y+dashVY;
+    if(canMove(nx,S.impo.y,false)) S.impo.x=nx;
+    if(canMove(S.impo.x,ny,false)) S.impo.y=ny;
+    emit(S.impo.x,S.impo.y,C.imposteur,3,1.4,14);
+    dashFrames--;
+  } else {
+    moveEnt(S.impo, inputVec, localSpeed(inputVec), false);
   }
 }
 
@@ -50,7 +68,12 @@ function moveLocal(){
   if(sprintI) stamina=Math.max(0,stamina-STAMINA_DRAIN);
   else        stamina=Math.min(STAMINA_MAX,stamina+STAMINA_REGEN);
   if(S.inno.alive) moveEnt(S.inno, inputVecInno, SPEED*(sprintI?SPRINT_MULT:1), true);
-  moveEnt(S.impo, inputVecImpo, SPEED, false);
+  if(dashFrames>0){
+    const nx=S.impo.x+dashVX, ny=S.impo.y+dashVY;
+    if(canMove(nx,S.impo.y,false)) S.impo.x=nx;
+    if(canMove(S.impo.x,ny,false)) S.impo.y=ny;
+    emit(S.impo.x,S.impo.y,C.imposteur,3,1.4,14); dashFrames--;
+  } else moveEnt(S.impo, inputVecImpo, SPEED, false);
   handleHeal(); handleOxyRepair(); handleInnoPickups(); handleImpoPickups(); checkWin();
 }
 
@@ -76,7 +99,10 @@ function handleImpoPickups(){
 // ── Soin / O₂ ──────────────────────────────────────────────
 function handleHeal(){
   if(S.inno.hearts>=HEARTS_MAX) return;
-  if(dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r && healReady<=0){ S.inno.hearts++; healReady=HEAL_CD; Sfx.heal(); sparkle(S.inno.x,S.inno.y,C.heal); }
+  if(dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r && healReady<=0){
+    S.inno.hearts++; healReady=HEAL_CD;
+    Sfx.heal(); sparkle(S.inno.x,S.inno.y,'#ff6b6b'); floatText(S.inno.x,S.inno.y-22,'+1 ❤️','#ff6b6b');
+  }
 }
 function handleOxyRepair(){
   if(Date.now()>=S.oxygenUntil) return;
@@ -156,6 +182,11 @@ function doAttack(){
   const wp=WEAPON_TYPES[S.impo.weapon]||WEAPON_TYPES.knife;
   if(attackReady>0 || !S.inno.alive || dist(S.impo,S.inno)>=wp.range) return false;
   Sfx.hit(); shake(4,180);
+  if(S.impo.weapon==='blaster'){ // BOND : le chat s'élance vers la souris
+    const a=Math.atan2(S.inno.y-S.impo.y, S.inno.x-S.impo.x);
+    dashVX=Math.cos(a)*DASH_SPEED; dashVY=Math.sin(a)*DASH_SPEED; dashFrames=DASH_FRAMES;
+    if(typeof Sfx!=='undefined') Sfx.whoosh(); shake(6,260);
+  }
   if(localMode){ applyHit(wp.dmg); attackReady=wp.cd; return true; }
   else if(myRole==='imposteur'){ sendAttack(wp.dmg); attackReady=wp.cd; return true; }
   return false;
@@ -203,7 +234,7 @@ function startRound(role, round){
   S.sabotageUntil=0; S.oxygenUntil=0; S.doorsUntil=0; S.over=null;
   attackReady=healReady=sabReady=oxyReady=doorReady=0;
   ventCooldown=tpCooldown=0;
-  stamina=STAMINA_MAX; scanUntil=0; scanCharges=0;
+  stamina=STAMINA_MAX; scanUntil=0; scanCharges=0; dashFrames=0;
   takenWeapons=new Set(); takenGadgets=new Set();
   minigameActive=null; partnerGoneAt=0; roundReported=false; _bannerSounded=false;
   _lastWorld='';

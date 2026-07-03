@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v22';
+const VERSION='v23';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -38,6 +38,10 @@ const VISION_DARK=120;
 // ── Gadgets innocent ───────────────────────────────────────
 const SCAN_DURATION_MS=2600;    // révèle l'imposteur ~2,6 s
 const SHIELD_ABSORB=1;          // encaisse 1 coup
+
+// ── Bond du chat (attaque « Bond ») ────────────────────────
+const DASH_FRAMES=9;            // durée de l'élan
+const DASH_SPEED=7.5;           // vitesse de l'élan
 
 // ── Manches / revanche ─────────────────────────────────────
 const WINS_NEEDED=2;            // best-of 3 (premier à 2)
