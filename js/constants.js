@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v14';
+const VERSION='v15';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -132,4 +132,43 @@ const DOORS=[
   {id:'d2', x:1130, y:590,  w:44, h:60},  // hall Hub↔Comms
   {id:'d3', x:660,  y:770,  w:60, h:44},  // hall Soute↔Hub
   {id:'d4', x:1380, y:840,  w:60, h:44},  // hall Comms↔Quartiers
+];
+
+// ── Décors (purement visuels, aucune collision) ───────────
+const DECOR=[
+  // Réacteur : un cœur de réacteur qui pulse + tuyaux
+  {type:'core',   x:255, y:300},
+  {type:'pipe',   x:80,  y:150, w:180, h:14},
+  {type:'pipe',   x:80,  y:170, w:120, h:14},
+  // Soute : caisses empilées
+  {type:'crate',  x:330, y:690, s:34},
+  {type:'crate',  x:322, y:730, s:26},
+  {type:'crate',  x:110, y:680, s:30},
+  {type:'barrel', x:130, y:960},
+  // Pont : consoles + grande baie vitrée
+  {type:'window', x:560, y:96,  w:420, h:40},
+  {type:'panel',  x:620, y:250},
+  {type:'panel',  x:900, y:250},
+  {type:'screen', x:700, y:250},
+  // Hub : consoles latérales
+  {type:'panel',  x:690, y:520},
+  {type:'panel',  x:950, y:520},
+  {type:'screen', x:690, y:700},
+  // Baie médicale : lits + moniteur
+  {type:'bed',    x:1250, y:300},
+  {type:'bed',    x:1450, y:300},
+  {type:'screen', x:1250, y:160},
+  // Communications : antenne + écrans
+  {type:'dish',   x:1560, y:560},
+  {type:'screen', x:1340, y:560},
+  {type:'panel',  x:1340, y:720},
+  // Quartiers : casiers + lit
+  {type:'locker', x:1200, y:980},
+  {type:'locker', x:1236, y:980},
+  {type:'bed',    x:1470, y:1090},
+  // Stockage : fûts + étagère
+  {type:'barrel', x:600, y:960},
+  {type:'barrel', x:632, y:962},
+  {type:'crate',  x:840, y:970, s:32},
+  {type:'plant',  x:850, y:1090},
 ];
