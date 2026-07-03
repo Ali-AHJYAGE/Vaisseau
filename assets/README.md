@@ -10,7 +10,17 @@ commit, ou ajoute-les toi-même et pousse sur GitHub (Render redéploie seul).
 | `innocent.png`       | Sprite de l'innocent (vue du dessus)   | ~128×128          |
 | `imposteur.png`      | Sprite de l'imposteur                  | ~128×128          |
 | `innocent_dead.png`  | Innocent mort (optionnel)              | ~128×128          |
+| `imposteur_dead.png` | Imposteur mort (optionnel)             | ~128×128          |
 | `space.png`          | Fond spatial (remplace les étoiles)    | 760×560           |
+
+### Animation de marche (optionnel)
+| Fichier              | Format                                                        |
+|----------------------|---------------------------------------------------------------|
+| `innocent_walk.png`  | Bande HORIZONTALE de frames **carrées** côte à côte (ex: 4 frames de 128×128 → image 512×128). Jouée quand le perso bouge, frame 0 à l'arrêt. |
+| `imposteur_walk.png` | Idem pour l'imposteur                                          |
+
+Si `*_walk.png` est présent → vraie animation. Sinon, un simple `innocent.png`
+est **déjà animé** par code (rebond + squash & stretch + balancement).
 | `task.png` `vent.png` `teleport.png` `weapon.png` `gadget.png` `o2.png` `heal.png` | icônes d'éléments (optionnel) | ~48×48 |
 
 ## Audio

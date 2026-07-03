@@ -6,7 +6,8 @@
 // ============================================================
 const IMAGES = {};
 // Emplacements reconnus (dépose assets/<nom>.png pour surcharger) :
-const IMG_SLOTS = ['innocent','imposteur','innocent_dead','space','floor','wall',
+const IMG_SLOTS = ['innocent','imposteur','innocent_dead','imposteur_dead',
+                   'innocent_walk','imposteur_walk','space','floor','wall',
                    'task','vent','teleport','weapon','gadget','o2','heal'];
 
 IMG_SLOTS.forEach(name => {
@@ -21,5 +22,13 @@ function hasImg(name){ const i=IMAGES[name]; return !!(i && i.complete && i.natu
 function drawImg(name, x, y, w, h){
   if(!hasImg(name)) return false;
   ctx.drawImage(IMAGES[name], x-w/2, y-h/2, w, h||w);
+  return true;
+}
+// Feuille de sprites : bande horizontale de frames CARRÉES. Dessine la frame idx.
+function drawSheet(name, idx, x, y, size){
+  const img=IMAGES[name]; if(!hasImg(name)) return false;
+  const fh=img.naturalHeight, n=Math.max(1,Math.round(img.naturalWidth/fh));
+  const i=((idx%n)+n)%n;
+  ctx.drawImage(img, i*fh,0,fh,fh, x-size/2, y-size/2, size, size);
   return true;
 }
