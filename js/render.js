@@ -143,10 +143,14 @@ function drawBean(e,color,dead,slot){
   if(dead){
     if(drawImg(slot+'_dead',x,y-bob,size)) return;  // sinon → bean mort ci-dessous
   } else if(hasImg(slot+'_walk')){
-    // feuille de marche animée : ~10 fps en mouvement, frame 0 à l'arrêt
-    const idx = moving ? Math.floor(frame/6) : 0;
-    ctx.save(); ctx.translate(x,y-bob); ctx.scale(e._face,1);
-    drawSheet(slot+'_walk', idx, 0,0, size); ctx.restore(); return;
+    // feuille de marche : frame idle à l'arrêt, cycle right/left en mouvement
+    let idx, flip=1;
+    if(!moving){ idx=SKIN_ANIM.idle; }
+    else if(SKIN_ANIM.flip){ const s=SKIN_ANIM.right; idx=s[Math.floor(frame/SKIN_ANIM.step)%s.length]; flip=e._face; }
+    else { const s=(e._face<0?SKIN_ANIM.left:SKIN_ANIM.right); idx=s[Math.floor(frame/SKIN_ANIM.step)%s.length]; }
+    ctx.save(); ctx.translate(x,y-bob); ctx.scale(flip,1);
+    drawSheet(slot+'_walk', idx, 0,0, SKIN_ANIM.dispH, SKIN_ANIM.frames, SKIN_ANIM.yOff);
+    ctx.restore(); return;
   } else if(hasImg(slot)){
     // sprite unique : marche simulée (rebond + squash & stretch + balancement)
     const t=frame*0.35, squash=moving?1+Math.sin(t)*0.08:1, sway=moving?Math.sin(t)*0.09:0;

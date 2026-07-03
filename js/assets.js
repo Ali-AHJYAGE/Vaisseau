@@ -24,11 +24,14 @@ function drawImg(name, x, y, w, h){
   ctx.drawImage(IMAGES[name], x-w/2, y-h/2, w, h||w);
   return true;
 }
-// Feuille de sprites : bande horizontale de frames CARRÉES. Dessine la frame idx.
-function drawSheet(name, idx, x, y, size){
+// Feuille de sprites : bande horizontale de N frames. Dessine la frame idx à
+// la hauteur d'affichage dispH (ratio préservé), centrée en (x,y+yOff).
+function drawSheet(name, idx, x, y, dispH, n, yOff){
   const img=IMAGES[name]; if(!hasImg(name)) return false;
-  const fh=img.naturalHeight, n=Math.max(1,Math.round(img.naturalWidth/fh));
-  const i=((idx%n)+n)%n;
-  ctx.drawImage(img, i*fh,0,fh,fh, x-size/2, y-size/2, size, size);
+  const N=n||Math.max(1,Math.round(img.naturalWidth/img.naturalHeight));
+  const fw=img.naturalWidth/N, fh=img.naturalHeight;
+  const i=((idx%N)+N)%N;
+  const s=dispH/fh, dw=fw*s;
+  ctx.drawImage(img, i*fw,0,fw,fh, x-dw/2, y-dispH/2+(yOff||0), dw, dispH);
   return true;
 }
