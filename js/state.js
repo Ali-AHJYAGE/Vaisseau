@@ -38,3 +38,4 @@ let takenGadgets = new Set();  // gadgets ramassés par l'innocent
 let myWins = 0, theirWins = 0, roundNum = 1;
 let roundReported = false;     // évite de compter deux fois la fin de manche
 let roundBanner = 0;           // frame jusqu'à laquelle afficher « Manche X »
+let _bannerSounded = false;    // évite de rejouer le son de victoire/défaite

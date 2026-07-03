@@ -7,6 +7,7 @@
 function pickRole(role) {
   if (localMode || gameStarted) return;
   tryFullscreen(); // ici on est dans le geste utilisateur (tap) → autorisé
+  Sfx.init(); Sfx.resume();
   myRole = role; // préférence locale (permet la reconnexion + non-verrouillage de son propre bouton)
   _setStatus('⏳ Attribution du rôle…');
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -37,8 +38,17 @@ function startWithRole(role) {
   loop();
 }
 
+function toggleMute() {
+  Sfx.init();
+  const m = !Sfx.isMuted();
+  Sfx.setMuted(m);
+  const btn = document.getElementById('btn-mute');
+  if (btn) btn.textContent = m ? '🔇' : '🔊';
+}
+
 function startLocal() {
   tryFullscreen();
+  Sfx.init(); Sfx.resume();
   localMode = true;
   gameStarted = true;
   myRole = 'innocent';

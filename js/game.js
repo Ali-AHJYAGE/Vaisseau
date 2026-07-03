@@ -62,20 +62,21 @@ function handleInnoPickups(){
       takenGadgets.add(g.id);
       if(g.type==='scanner') scanCharges++;
       else if(g.type==='shield') S.inno.shield += SHIELD_ABSORB;
+      Sfx.pickup(); sparkle(g.x,g.y,C.gadget);
     }
   }
 }
 function handleImpoPickups(){
   for(const w of WEAPON_PICKUPS){
     if(takenWeapons.has(w.id)) continue;
-    if(dist(S.impo,w)<28){ takenWeapons.add(w.id); S.impo.weapon=w.type; }
+    if(dist(S.impo,w)<28){ takenWeapons.add(w.id); S.impo.weapon=w.type; Sfx.pickup(); sparkle(w.x,w.y,C.weapon); }
   }
 }
 
 // ── Soin / O₂ ──────────────────────────────────────────────
 function handleHeal(){
   if(S.inno.hearts>=HEARTS_MAX) return;
-  if(dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r && healReady<=0){ S.inno.hearts++; healReady=HEAL_CD; }
+  if(dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r && healReady<=0){ S.inno.hearts++; healReady=HEAL_CD; Sfx.heal(); sparkle(S.inno.x,S.inno.y,C.heal); }
 }
 function handleOxyRepair(){
   if(Date.now()>=S.oxygenUntil) return;
@@ -95,9 +96,10 @@ function checkWin(){
 
 function applyHit(dmg){
   if(!S.inno.alive) return;
-  if(S.inno.shield>0){ S.inno.shield--; return; } // le bouclier encaisse tout le coup
+  if(S.inno.shield>0){ S.inno.shield--; Sfx.heal(); sparkle(S.inno.x,S.inno.y,C.gadget); flash('rgba(92,200,255,0.35)',200); return; }
   S.inno.hearts=Math.max(0, S.inno.hearts-(dmg||1));
-  if(S.inno.hearts<=0) S.inno.alive=false;
+  Sfx.hurt(); shake(7,320); flash('rgba(255,60,80,0.5)',260); emit(S.inno.x,S.inno.y,C.imposteur,16,3.4,32);
+  if(S.inno.hearts<=0){ S.inno.alive=false; burst(S.inno.x,S.inno.y,'#ff5d8f'); }
 }
 
 // ============================================================
@@ -117,7 +119,9 @@ function doTeleport(){
   for(const tp of TELEPORTS){
     if(dist(S.inno,tp)<40 && tpCooldown<=0){
       const dest=TELEPORTS.find(o=>o.id===tp.link);
-      S.inno.x=dest.x; S.inno.y=dest.y; tpCooldown=45; return true;
+      sparkle(S.inno.x,S.inno.y,C.teleport);
+      S.inno.x=dest.x; S.inno.y=dest.y; S.inno._rx=dest.x; S.inno._ry=dest.y; tpCooldown=45;
+      Sfx.teleport(); sparkle(dest.x,dest.y,C.teleport); return true;
     }
   }
   return false;
@@ -128,7 +132,7 @@ function doScan(){
   if(S.over) return false;
   if(!(myRole==='innocent'||localMode)) return false;
   if(scanCharges<=0) return false;
-  scanCharges--; scanUntil=Date.now()+SCAN_DURATION_MS; return true;
+  scanCharges--; scanUntil=Date.now()+SCAN_DURATION_MS; Sfx.pickup(); return true;
 }
 
 // IMPOSTEUR — vent (anneau)
@@ -138,7 +142,9 @@ function doVent(){
   for(let i=0;i<VENTS.length;i++){
     if(dist(S.impo,VENTS[i])<40 && ventCooldown<=0){
       const next=VENTS[(i+1)%VENTS.length];
-      S.impo.x=next.x; S.impo.y=next.y; ventCooldown=40; return true;
+      Sfx.vent(); puff(S.impo.x,S.impo.y);
+      S.impo.x=next.x; S.impo.y=next.y; S.impo._rx=next.x; S.impo._ry=next.y; ventCooldown=40;
+      puff(next.x,next.y); return true;
     }
   }
   return false;
@@ -149,6 +155,7 @@ function doAttack(){
   if(S.over) return false;
   const wp=WEAPON_TYPES[S.impo.weapon]||WEAPON_TYPES.knife;
   if(attackReady>0 || !S.inno.alive || dist(S.impo,S.inno)>=wp.range) return false;
+  Sfx.hit(); shake(4,180);
   if(localMode){ applyHit(wp.dmg); attackReady=wp.cd; return true; }
   else if(myRole==='imposteur'){ sendAttack(wp.dmg); attackReady=wp.cd; return true; }
   return false;
@@ -157,19 +164,19 @@ function doAttack(){
 function doSabLights(){
   if(S.over||sabReady>0) return false;
   if(!(myRole==='imposteur'||localMode)) return false;
-  S.sabotageUntil=Date.now()+SAB_DURATION_MS; sabReady=SAB_CD;
+  S.sabotageUntil=Date.now()+SAB_DURATION_MS; sabReady=SAB_CD; Sfx.sabotage();
   if(!localMode) sendSabotage(); return true;
 }
 function doSabOxy(){
   if(S.over||oxyReady>0||Date.now()<S.oxygenUntil) return false;
   if(!(myRole==='imposteur'||localMode)) return false;
-  S.oxygenUntil=Date.now()+OXY_DURATION_MS; oxyReady=OXY_CD;
+  S.oxygenUntil=Date.now()+OXY_DURATION_MS; oxyReady=OXY_CD; Sfx.sabotage();
   if(!localMode) sendOxygen(); return true;
 }
 function doSabDoors(){
   if(S.over||doorReady>0) return false;
   if(!(myRole==='imposteur'||localMode)) return false;
-  S.doorsUntil=Date.now()+DOOR_DURATION_MS; doorReady=DOOR_CD;
+  S.doorsUntil=Date.now()+DOOR_DURATION_MS; doorReady=DOOR_CD; Sfx.door();
   if(!localMode) sendDoors(); return true;
 }
 
@@ -198,7 +205,7 @@ function startRound(role, round){
   ventCooldown=tpCooldown=0;
   stamina=STAMINA_MAX; scanUntil=0; scanCharges=0;
   takenWeapons=new Set(); takenGadgets=new Set();
-  minigameActive=null; partnerGoneAt=0; roundReported=false;
+  minigameActive=null; partnerGoneAt=0; roundReported=false; _bannerSounded=false;
   _lastWorld='';
   roundBanner=150;
   const mg=document.getElementById('minigame'); if(mg) mg.style.display='none';

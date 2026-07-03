@@ -99,6 +99,14 @@ canvas {
 }
 #btn-sprint.active { background:rgba(138,211,255,.55); border-color:#8ad3ff; transform:scale(.92); }
 
+/* Bouton muet (coin haut-gauche) */
+#btn-mute {
+  position:absolute; top:8px; left:8px; z-index:6;
+  width:34px; height:34px; border-radius:10px; padding:0; font-size:16px;
+  background:rgba(20,24,44,.7); border:1.5px solid rgba(255,255,255,.15); color:#fff;
+  pointer-events:all;
+}
+
 /* ── Joystick virtuel ────────────────────────────────────── */
 #joystick-zone {
   position:absolute;

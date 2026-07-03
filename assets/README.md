@@ -1,0 +1,25 @@
+# Assets — remplace le rendu par code par tes propres fichiers
+
+Dépose un fichier au bon nom dans ce dossier : il **remplace automatiquement**
+le rendu généré par le jeu (aucun code à toucher). Envoie-les moi et je les
+commit, ou ajoute-les toi-même et pousse sur GitHub (Render redéploie seul).
+
+## Images (PNG transparent conseillé)
+| Fichier              | Rôle                                   | Taille conseillée |
+|----------------------|----------------------------------------|-------------------|
+| `innocent.png`       | Sprite de l'innocent (vue du dessus)   | ~128×128          |
+| `imposteur.png`      | Sprite de l'imposteur                  | ~128×128          |
+| `innocent_dead.png`  | Innocent mort (optionnel)              | ~128×128          |
+| `space.png`          | Fond spatial (remplace les étoiles)    | 760×560           |
+| `task.png` `vent.png` `teleport.png` `weapon.png` `gadget.png` `o2.png` `heal.png` | icônes d'éléments (optionnel) | ~48×48 |
+
+## Audio
+| Fichier      | Rôle                                             |
+|--------------|--------------------------------------------------|
+| `music.mp3`  | Musique de fond, **en boucle** (< ~4 Mo)         |
+
+⚠️ Sur l'URL publique : n'utilise que de la musique **libre de droits** ou tes
+propres créations (sinon risque de retrait).
+
+Les bruitages (coups, tâches, sabotages, victoire…) sont **synthétisés en direct**
+par `js/audio.js` — pas besoin de fichiers.

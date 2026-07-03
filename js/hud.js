@@ -126,4 +126,12 @@ function drawBanner(){
   emoji.textContent=em; t.textContent=title; sub.textContent=subtitle;
   if(btn) btn.textContent=btnTxt;
   b.className=cls;
+
+  if(!_bannerSounded && typeof Sfx!=='undefined'){
+    _bannerSounded=true;
+    if(S.over!=='disconnect'){
+      const won = S.over==='match-win' || (S.over!=='match-lose' && (localMode || S.over===myRole));
+      won ? Sfx.win() : Sfx.lose();
+    }
+  }
 }

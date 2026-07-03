@@ -1,16 +1,20 @@
 // ============================================================
-//  RENDU (v13) — caméra, monde, fog, mini-carte
+//  RENDU (v14) — style cartoon coloré, particules, caméra
 // ============================================================
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 const TAU=Math.PI*2;
 
 const C={
-  space:'#070810', hall:'#2c3358', floor:'#262c4a', edge:'#313a63',
-  innocent:'#56e0d0', imposteur:'#f2618f', task:'#ffd84d', taskDone:'#74e08a',
-  heal:'#7ad3ff', teleport:'#c08cff', vent:'#8a94c8', weapon:'#ffb14d',
-  gadget:'#8ad3ff', door:'#9aa4d8', doorShut:'#ff5a66', ink:'rgba(238,240,255,0.4)',
+  space:'#0b1030', space2:'#191d47',
+  hall:'#3a4a86', floor:'#3d4f96', floorHi:'#5566bb', edge:'#7f96e8',
+  innocent:'#3fd0c9', imposteur:'#ff5d8f', task:'#ffd23f', taskDone:'#5fe08a',
+  heal:'#5cc8ff', teleport:'#c77dff', vent:'#aab4e8', weapon:'#ffab3d', gadget:'#5cc8ff',
+  visor:'#bfefff', ink:'rgba(230,235,255,0.55)',
 };
 const GADGET_ICON={scanner:'📡', shield:'🛡️'};
+
+// Étoiles (parallax) — générées une fois
+const STARS=Array.from({length:130},()=>({x:Math.random()*VIEW_W, y:Math.random()*VIEW_H, z:0.2+Math.random()*0.6, r:Math.random()*1.6+0.4}));
 
 function camera(){
   let mx,my;
@@ -23,84 +27,82 @@ function camera(){
 }
 
 function draw(){
+  updateFX();
   const {cx,cy}=camera();
-  ctx.fillStyle=C.space; ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  ctx.save(); ctx.translate(-cx,-cy);
 
-  const iAmInno = (myRole==='innocent'||localMode);
-  const iAmImpo = (myRole==='imposteur'||localMode);
+  // Fond spatial + étoiles parallax
+  const bg=ctx.createLinearGradient(0,0,0,VIEW_H);
+  bg.addColorStop(0,C.space2); bg.addColorStop(1,C.space);
+  ctx.fillStyle=bg; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  if(!hasImg('space')) drawStars(cx,cy); else drawImg('space',VIEW_W/2,VIEW_H/2,VIEW_W,VIEW_H);
 
-  // Couloirs + salles
-  for(const z of HALLS) rrect(z.x,z.y,z.w,z.h,8,C.hall);
+  const sh=shakeOffset();
+  ctx.save(); ctx.translate(-cx+sh.x,-cy+sh.y);
+
+  const iAmInno=(myRole==='innocent'||localMode), iAmImpo=(myRole==='imposteur'||localMode);
+
+  // Couloirs
+  for(const z of HALLS){ rpath(z.x,z.y,z.w,z.h,10); ctx.fillStyle=C.hall; ctx.fill(); }
+  // Salles (dégradé + contour cartoon + ombre + étiquette)
   for(const r of ROOMS){
-    rrect(r.x,r.y,r.w,r.h,16,C.floor);
-    ctx.strokeStyle=C.edge; ctx.lineWidth=2; ctx.strokeRect(r.x+2,r.y+2,r.w-4,r.h-4);
-    ctx.fillStyle=C.ink; ctx.font='600 14px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(r.name,r.x+r.w/2,r.y+22);
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=12; ctx.shadowOffsetY=5;
+    rpath(r.x,r.y,r.w,r.h,20);
+    const g=ctx.createLinearGradient(0,r.y,0,r.y+r.h); g.addColorStop(0,C.floorHi); g.addColorStop(1,C.floor);
+    ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    rpath(r.x+3,r.y+3,r.w-6,r.h-6,17); ctx.strokeStyle=C.edge; ctx.lineWidth=3; ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.font='700 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(r.name,r.x+r.w/2,r.y+24);
   }
 
-  // Portes (chokepoints)
+  // Portes
   const dShut=doorsClosed();
-  for(const d of DOORS) rrect(d.x,d.y,d.w,d.h,4, dShut?'rgba(255,90,102,0.9)':'rgba(150,160,210,0.28)');
+  for(const d of DOORS){ rpath(d.x,d.y,d.w,d.h,5); ctx.fillStyle=dShut?'rgba(255,90,110,0.95)':'rgba(150,165,220,0.3)'; ctx.fill();
+    if(dShut){ ctx.strokeStyle='#ffd0d6'; ctx.lineWidth=2; ctx.stroke(); } }
 
   // Zone de soin
-  ctx.beginPath(); ctx.arc(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,0,TAU);
-  ctx.fillStyle='rgba(122,211,255,.18)'; ctx.fill();
-  ctx.fillStyle=C.heal; ctx.font='24px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('✚',HEAL_ZONE.x,HEAL_ZONE.y+8);
+  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,'rgba(92,200,255,.16)');
+  ctx.fillStyle=C.heal; ctx.font='26px sans-serif'; ctx.textAlign='center'; ctx.fillText('✚',HEAL_ZONE.x,HEAL_ZONE.y+9);
 
-  // Panneau O₂ (toujours visible, pulse rouge si crise)
+  // Panneau O₂
   const oxyOn=Date.now()<S.oxygenUntil;
-  ctx.beginPath(); ctx.arc(OXY_PANEL.x,OXY_PANEL.y,oxyOn?28:20,0,TAU);
-  if(oxyOn){ const p=Math.sin(frame*0.25)*0.3+0.7; ctx.fillStyle=`rgba(255,93,108,${(p*0.5).toFixed(2)})`; }
-  else ctx.fillStyle='rgba(120,140,200,0.18)';
-  ctx.fill();
-  ctx.fillStyle=oxyOn?'#ff5d6c':'#8fa0d8'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('O₂',OXY_PANEL.x,OXY_PANEL.y+6);
+  if(oxyOn){ const p=Math.sin(frame*0.25)*0.3+0.7; glowCircle(OXY_PANEL.x,OXY_PANEL.y,30,`rgba(255,93,108,${(p*0.5).toFixed(2)})`); }
+  else glowCircle(OXY_PANEL.x,OXY_PANEL.y,20,'rgba(120,140,220,0.18)');
+  ctx.fillStyle=oxyOn?'#ff5d6c':'#9fb0e8'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.fillText('O₂',OXY_PANEL.x,OXY_PANEL.y+6);
 
   // Téléporteurs (innocent)
   if(iAmInno) for(const tp of TELEPORTS){
-    ctx.beginPath(); ctx.arc(tp.x,tp.y,20,0,TAU);
-    ctx.fillStyle='rgba(192,140,255,.25)'; ctx.fill();
-    ctx.fillStyle=C.teleport; ctx.font='20px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('🌀',tp.x,tp.y+7);
+    const p=Math.sin(frame*0.1+tp.x)*3;
+    glowCircle(tp.x,tp.y,20,'rgba(199,125,255,.28)');
+    ctx.fillStyle=C.teleport; ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.fillText('🌀',tp.x,tp.y+7+p*0.2);
   }
-
   // Vents (imposteur)
   if(iAmImpo) for(const v of VENTS) drawVent(v.x,v.y);
 
-  // Armes à ramasser (imposteur)
-  if(iAmImpo) for(const w of WEAPON_PICKUPS) if(!takenWeapons.has(w.id))
-    drawPickup(w.x,w.y,WEAPON_TYPES[w.type].icon,C.weapon);
-  // Gadgets à ramasser (innocent)
-  if(iAmInno) for(const g of GADGET_PICKUPS) if(!takenGadgets.has(g.id))
-    drawPickup(g.x,g.y,GADGET_ICON[g.type],C.gadget);
+  // Pickups
+  if(iAmImpo) for(const w of WEAPON_PICKUPS) if(!takenWeapons.has(w.id)) drawPickup(w.x,w.y,WEAPON_TYPES[w.type].icon,C.weapon);
+  if(iAmInno) for(const g of GADGET_PICKUPS) if(!takenGadgets.has(g.id)) drawPickup(g.x,g.y,GADGET_ICON[g.type],C.gadget);
 
   // Tâches
   for(const t of TASKS){
-    const done=S.tasks[t.id];
-    const near=!done&&iAmInno&&dist(S.inno,t)<44;
-    if(near){ ctx.beginPath(); ctx.arc(t.x,t.y,24,0,TAU); ctx.strokeStyle='rgba(255,216,77,.6)'; ctx.lineWidth=2; ctx.stroke(); }
-    ctx.beginPath(); ctx.arc(t.x,t.y,17,0,TAU);
-    ctx.fillStyle=done?C.taskDone:C.task; ctx.fill();
-    ctx.fillStyle=done?'#0a2a14':'#5a4a00'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(done?'✓':'⚙',t.x,t.y+5);
+    const done=S.tasks[t.id]; const near=!done&&iAmInno&&dist(S.inno,t)<44;
+    if(near){ const p=Math.sin(frame*0.2)*2; glowCircle(t.x,t.y,24+p,'rgba(255,210,63,.18)'); }
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=6; ctx.shadowOffsetY=2;
+    ctx.beginPath(); ctx.arc(t.x,t.y,16,0,TAU); ctx.fillStyle=done?C.taskDone:C.task; ctx.fill(); ctx.restore();
+    ctx.fillStyle=done?'#0a3018':'#5a4a00'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText(done?'✓':'⚙',t.x,t.y+5);
   }
+
+  // Particules (sous les persos)
+  drawParticles();
 
   // Personnages
-  if(S.impo.present) player(S.impo.x,S.impo.y,C.imposteur,'😈');
-  if(iAmInno||S.inno.synced) player(S.inno.x,S.inno.y,C.innocent,S.inno.alive?'😇':'💀');
-
-  // Bouclier de l'innocent (halo)
-  if((iAmInno||S.inno.synced)&&S.inno.shield>0&&S.inno.alive){
-    ctx.beginPath(); ctx.arc(S.inno.x,S.inno.y,PLAYER_R+5,0,TAU);
-    ctx.strokeStyle='rgba(138,211,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
-  }
+  if(S.impo.present) drawBean(S.impo,C.imposteur,false,'imposteur');
+  if(iAmInno||S.inno.synced) drawBean(S.inno,C.innocent,!S.inno.alive,'innocent');
 
   ctx.restore();
 
   if(!localMode) drawFog(cx,cy);
   drawScanReveal(cx,cy);
+  drawFlash();
   drawMinimap();
   drawStamina();
   drawHud();
@@ -108,112 +110,159 @@ function draw(){
   _drawDebug();
 }
 
+function drawStars(cx,cy){
+  ctx.fillStyle='#fff';
+  for(const s of STARS){
+    let x=(s.x - cx*s.z)%VIEW_W; if(x<0)x+=VIEW_W;
+    let y=(s.y - cy*s.z)%VIEW_H; if(y<0)y+=VIEW_H;
+    ctx.globalAlpha=0.3+s.z*0.6; ctx.beginPath(); ctx.arc(x,y,s.r,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+// Personnage style Among Us : ombre + corps + visière + rebond + orientation
+function drawBean(e,color,dead,slot){
+  if(e._rx===undefined){ e._rx=e.x; e._ry=e.y; e._lx=e.x; e._ly=e.y; e._face=1; }
+  const k=isRemote(e)?0.28:1;
+  e._rx+=(e.x-e._rx)*k; e._ry+=(e.y-e._ry)*k;
+  const dx=e._rx-e._lx, dy=e._ry-e._ly; const spd=Math.hypot(dx,dy);
+  if(dx>0.3)e._face=1; else if(dx<-0.3)e._face=-1;
+  e._lx=e._rx; e._ly=e._ry;
+  const x=e._rx, y=e._ry, moving=spd>0.4;
+  const bob=moving?Math.sin(frame*0.35)*2.2:Math.sin(frame*0.06)*0.8;
+
+  // ombre
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(x,y+PLAYER_R*0.92,PLAYER_R*0.85,PLAYER_R*0.36,0,0,TAU); ctx.fill();
+
+  if((dead&&drawImg(slot+'_dead',x,y-bob,PLAYER_R*2.6))||(!dead&&drawImg(slot,x,y-bob,PLAYER_R*2.6))) return;
+
+  const cy0=y+bob;
+  if(dead){
+    // bean tombé + yeux ✕
+    ctx.save(); ctx.translate(x,y+4); ctx.rotate(Math.PI/2*0.72);
+    beanBody(0,0,'#7d86a8',e._face); ctx.restore();
+    ctx.fillStyle='#2a2f52'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('✕',x-2,y-2);
+    return;
+  }
+
+  beanBody(x,cy0,color,e._face);
+  // pattes qui gigotent
+  const lw=PLAYER_R*0.42, step=moving?Math.sin(frame*0.35)*2:0;
+  ctx.fillStyle=shade(color,-40);
+  rpath(x-lw-1,cy0+PLAYER_R*0.75+step,lw,7,3); ctx.fill();
+  rpath(x+1,cy0+PLAYER_R*0.75-step,lw,7,3); ctx.fill();
+  // corps par-dessus les pattes déjà dessiné ? on redessine le corps
+  beanBody(x,cy0,color,e._face);
+  // visière
+  const vx=x+e._face*3, vy=cy0-PLAYER_R*0.35;
+  ctx.beginPath(); ctx.ellipse(vx,vy,PLAYER_R*0.62,PLAYER_R*0.44,0,0,TAU);
+  ctx.fillStyle=C.visor; ctx.fill(); ctx.strokeStyle=shade(color,-50); ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(vx+e._face*3,vy-3,3,4,0,0,TAU); ctx.fill();
+
+  // bouclier
+  if(e===S.inno && S.inno.shield>0){
+    ctx.beginPath(); ctx.arc(x,cy0,PLAYER_R+6,0,TAU);
+    ctx.strokeStyle='rgba(92,200,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+}
+function beanBody(x,y,color,face){
+  const w=PLAYER_R*1.5, h=PLAYER_R*2.05;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=6; ctx.shadowOffsetY=3;
+  ctx.beginPath();
+  ctx.moveTo(x-w/2, y-h/2+w/2);
+  ctx.arc(x, y-h/2+w/2, w/2, Math.PI, 0);
+  ctx.lineTo(x+w/2, y+h/2-w/3);
+  ctx.arc(x, y+h/2-w/3, w/2, 0, Math.PI);
+  ctx.closePath();
+  ctx.fillStyle=color; ctx.fill(); ctx.restore();
+  ctx.strokeStyle=shade(color,-50); ctx.lineWidth=2.5; ctx.stroke();
+  // reflet
+  ctx.fillStyle='rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.ellipse(x-face*w*0.18,y-h*0.12,w*0.16,h*0.28,0,0,TAU); ctx.fill();
+}
+
 function drawVent(x,y){
-  rrect(x-13,y-13,26,26,6,'rgba(20,24,42,0.95)');
-  ctx.strokeStyle=C.vent; ctx.lineWidth=1.4;
+  rpath(x-13,y-13,26,26,6); ctx.fillStyle='#20264a'; ctx.fill(); ctx.strokeStyle=C.vent; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle=C.vent; ctx.lineWidth=1.6;
   for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(x-8,y+i*6); ctx.lineTo(x+8,y+i*6); ctx.stroke(); }
 }
 function drawPickup(x,y,icon,ring){
-  const p=Math.sin(frame*0.12)*2;
-  ctx.beginPath(); ctx.arc(x,y,15,0,TAU);
-  ctx.fillStyle='rgba(20,24,42,0.8)'; ctx.fill();
-  ctx.strokeStyle=ring; ctx.lineWidth=2; ctx.stroke();
-  ctx.font='17px sans-serif'; ctx.textAlign='center';
-  ctx.fillText(icon,x,y+6-p*0);
+  const p=Math.sin(frame*0.12)*2.5;
+  glowCircle(x,y-p,16,'rgba(255,255,255,0.06)');
+  ctx.beginPath(); ctx.arc(x,y-p,15,0,TAU); ctx.fillStyle='rgba(20,24,46,0.85)'; ctx.fill();
+  ctx.strokeStyle=ring; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.font='17px sans-serif'; ctx.textAlign='center'; ctx.fillText(icon,x,y-p+6);
 }
 
-// Scanner : révèle l'imposteur par-dessus le fog
 function drawScanReveal(cx,cy){
   if(localMode||myRole!=='innocent') return;
   if(Date.now()>=scanUntil||!S.impo.present) return;
-  const sx=S.impo.x-cx, sy=S.impo.y-cy;
-  const p=Math.sin(frame*0.3)*3+10;
-  ctx.beginPath(); ctx.arc(sx,sy,p+6,0,TAU);
-  ctx.strokeStyle='rgba(138,211,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff';
-  ctx.fillText('😈',sx,sy+6);
+  const sx=S.impo.x-cx, sy=S.impo.y-cy, p=Math.sin(frame*0.3)*3+10;
+  ctx.beginPath(); ctx.arc(sx,sy,p+8,0,TAU); ctx.strokeStyle='rgba(92,200,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText('😈',sx,sy+6);
 }
 
-// Jauge d'endurance (bas-gauche, au-dessus de la barre debug)
 function drawStamina(){
-  const w=110,h=7,x=12,y=VIEW_H-34;
+  const w=110,h=7,x=12,y=VIEW_H-32;
   const r=Math.max(0,Math.min(1,stamina/STAMINA_MAX));
-  rrect(x-2,y-2,w+4,h+4,4,'rgba(0,0,0,0.45)');
-  ctx.fillStyle = r<0.25?'#ff8a5d':'#8ad3ff';
-  rrect(x,y,w*r,h,3,ctx.fillStyle);
-  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='9px monospace'; ctx.textAlign='left';
-  ctx.fillText('⚡ SPRINT',x,y-5);
+  rpath(x-2,y-2,w+4,h+4,4); ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fill();
+  rpath(x,y,w*r,h,3); ctx.fillStyle=r<0.25?'#ff8a5d':'#5cc8ff'; ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='9px monospace'; ctx.textAlign='left'; ctx.fillText('⚡ SPRINT',x,y-5);
 }
 
 function drawMinimap(){
   const w=150, scale=w/WORLD_W, h=WORLD_H*scale, x0=(VIEW_W-w)/2, y0=8;
-  rrect(x0-4,y0-4,w+8,h+8,8,'rgba(10,12,24,0.8)');
-  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1; ctx.strokeRect(x0-4,y0-4,w+8,h+8);
+  rpath(x0-4,y0-4,w+8,h+8,8); ctx.fillStyle='rgba(10,12,28,0.82)'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.14)'; ctx.lineWidth=1; ctx.strokeRect(x0-4,y0-4,w+8,h+8);
   const px=v=>x0+v*scale, py=v=>y0+v*scale;
   const dot=(x,y,r)=>{ ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill(); };
-
   ctx.save(); ctx.beginPath(); ctx.rect(x0,y0,w,h); ctx.clip();
   for(const z of HALLS){ ctx.fillStyle=C.hall;  ctx.fillRect(px(z.x),py(z.y),z.w*scale,z.h*scale); }
   for(const r of ROOMS){ ctx.fillStyle=C.floor; ctx.fillRect(px(r.x),py(r.y),r.w*scale,r.h*scale); }
-
   const iAmInno=(myRole==='innocent'||localMode), iAmImpo=(myRole==='imposteur'||localMode);
-  const blind = myRole==='innocent' && Date.now()<S.sabotageUntil;
-  if(blind){
-    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x0,y0,w,h);
-    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('⚡',x0+w/2,y0+h/2+6); ctx.restore(); return;
-  }
-
-  // O₂ + soin repères
-  ctx.fillStyle=Date.now()<S.oxygenUntil?'#ff5d6c':'rgba(120,140,200,.5)'; dot(px(OXY_PANEL.x),py(OXY_PANEL.y),2);
+  const blind=myRole==='innocent'&&Date.now()<S.sabotageUntil;
+  if(blind){ ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x0,y0,w,h);
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.fillText('⚡',x0+w/2,y0+h/2+6); ctx.restore(); return; }
+  ctx.fillStyle=Date.now()<S.oxygenUntil?'#ff5d6c':'rgba(120,140,220,.5)'; dot(px(OXY_PANEL.x),py(OXY_PANEL.y),2);
   ctx.fillStyle=C.heal; dot(px(HEAL_ZONE.x),py(HEAL_ZONE.y),2);
   if(iAmInno){ ctx.fillStyle=C.teleport; for(const tp of TELEPORTS) dot(px(tp.x),py(tp.y),1.8); }
-  if(iAmImpo){ ctx.fillStyle=C.vent;     for(const v of VENTS) dot(px(v.x),py(v.y),1.8); }
+  if(iAmImpo){ ctx.fillStyle=C.vent; for(const v of VENTS) dot(px(v.x),py(v.y),1.8); }
   for(const t of TASKS){ ctx.fillStyle=S.tasks[t.id]?C.taskDone:C.task; dot(px(t.x),py(t.y),2.4); }
-
-  if(localMode){
-    ctx.fillStyle=C.imposteur; dot(px(S.impo.x),py(S.impo.y),3.2);
-    ctx.fillStyle=C.innocent;  dot(px(S.inno.x),py(S.inno.y),3.2);
-  } else {
-    const me=myRole==='imposteur'?S.impo:S.inno;
-    ctx.fillStyle=myRole==='imposteur'?C.imposteur:C.innocent;
-    dot(px(me.x),py(me.y),3.4);
+  if(localMode){ ctx.fillStyle=C.imposteur; dot(px(S.impo.x),py(S.impo.y),3.2); ctx.fillStyle=C.innocent; dot(px(S.inno.x),py(S.inno.y),3.2); }
+  else { const me=myRole==='imposteur'?S.impo:S.inno; ctx.fillStyle=myRole==='imposteur'?C.imposteur:C.innocent; dot(px(me.x),py(me.y),3.4);
     ctx.lineWidth=1.2; ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.stroke();
-    // scanner actif → point rouge de l'imposteur sur la carte
-    if(myRole==='innocent'&&Date.now()<scanUntil&&S.impo.present){ ctx.fillStyle=C.imposteur; dot(px(S.impo.x),py(S.impo.y),3); }
-  }
+    if(myRole==='innocent'&&Date.now()<scanUntil&&S.impo.present){ ctx.fillStyle=C.imposteur; dot(px(S.impo.x),py(S.impo.y),3); } }
   ctx.restore();
 }
 
 function _drawDebug(){
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(VIEW_W-70,VIEW_H-16,70,16);
-  ctx.fillStyle='rgba(255,255,255,.5)'; ctx.font='10px monospace'; ctx.textAlign='right';
-  ctx.fillText(`[${VERSION}] ws:${wsReady()}`,VIEW_W-4,VIEW_H-4);
-  ctx.restore();
+  ctx.save(); ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(VIEW_W-66,VIEW_H-15,66,15);
+  ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='10px monospace'; ctx.textAlign='right';
+  ctx.fillText(`[${VERSION}] ws:${wsReady()}`,VIEW_W-4,VIEW_H-4); ctx.restore();
 }
 
 function drawFog(cx,cy){
   const me=myRole==='imposteur'?S.impo:S.inno;
-  const sx=me.x-cx, sy=me.y-cy;
+  const sx=(me._rx??me.x)-cx, sy=(me._ry??me.y)-cy;
   const dark=myRole==='innocent'&&Date.now()<S.sabotageUntil;
   const radius=dark?VISION_DARK:VISION;
-  const darkColor=dark?'rgba(3,4,10,0.97)':'rgba(5,6,14,0.95)';
+  const darkColor=dark?'rgba(3,4,10,0.97)':'rgba(6,8,20,0.92)';
   const g=ctx.createRadialGradient(sx,sy,radius*0.55,sx,sy,radius);
-  g.addColorStop(0,'rgba(7,8,16,0)'); g.addColorStop(1,darkColor);
+  g.addColorStop(0,'rgba(9,10,22,0)'); g.addColorStop(1,darkColor);
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  ctx.fillStyle=darkColor;
-  ctx.beginPath(); ctx.rect(0,0,VIEW_W,VIEW_H); ctx.arc(sx,sy,radius,0,TAU,true); ctx.fill('evenodd');
+  ctx.fillStyle=darkColor; ctx.beginPath(); ctx.rect(0,0,VIEW_W,VIEW_H); ctx.arc(sx,sy,radius,0,TAU,true); ctx.fill('evenodd');
 }
 
-function player(x,y,color,emoji){
-  ctx.beginPath(); ctx.arc(x,y,PLAYER_R,0,TAU); ctx.fillStyle=color; ctx.fill();
-  ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.stroke();
-  ctx.font='17px sans-serif'; ctx.textAlign='center'; ctx.fillText(emoji,x,y+6);
-}
-function rrect(x,y,w,h,r,fill){
-  ctx.beginPath(); ctx.moveTo(x+r,y);
+// Helpers
+function isRemote(e){ if(localMode) return false; return myRole==='innocent'?e===S.impo:e===S.inno; }
+function glowCircle(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fillStyle=fill; ctx.fill(); }
+function rpath(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
   ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+  return `rgb(${r},${g},${b})`;
 }

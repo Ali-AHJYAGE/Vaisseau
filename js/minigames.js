@@ -24,7 +24,11 @@ function openMinigame(task){
 
 function closeMinigame(success){
   if(_mgCleanup){ _mgCleanup(); _mgCleanup=null; }
-  if(success&&minigameActive) S.tasks[minigameActive.id]=true;
+  if(success&&minigameActive){
+    S.tasks[minigameActive.id]=true;
+    if(typeof Sfx!=='undefined') Sfx.task();
+    if(typeof burst!=='undefined') burst(minigameActive.x,minigameActive.y,'#5fe08a');
+  }
   minigameActive=null;
   mg.el.style.display='none';
   mg.area.innerHTML='';

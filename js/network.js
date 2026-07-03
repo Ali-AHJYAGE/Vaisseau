@@ -79,18 +79,23 @@ function handleMessage(m) {
     case 'impo':
       S.impo.x = m.x; S.impo.y = m.y; S.impo.present = true;
       if (m.weapon) S.impo.weapon = m.weapon; break;
-    case 'world':
-      S.tasks = m.tasks; S.over = m.over; break;
+    case 'world': {
+      const before = S.tasks ? Object.values(S.tasks).filter(Boolean).length : 0;
+      S.tasks = m.tasks; S.over = m.over;
+      const after = Object.values(S.tasks).filter(Boolean).length;
+      if (after > before && typeof Sfx !== 'undefined') Sfx.task(); // ping quand une tâche tombe
+      break;
+    }
     case 'attack':
       if (myRole === 'innocent') applyHit(m.dmg); break;
     case 'sabotage':
-      S.sabotageUntil = Date.now() + SAB_DURATION_MS; break;
+      S.sabotageUntil = Date.now() + SAB_DURATION_MS; if(typeof Sfx!=='undefined') Sfx.sabotage(); break;
     case 'oxygen':
-      S.oxygenUntil = Date.now() + OXY_DURATION_MS; break;
+      S.oxygenUntil = Date.now() + OXY_DURATION_MS; if(typeof Sfx!=='undefined') Sfx.sabotage(); break;
     case 'oxyfix':
       S.oxygenUntil = 0; break;
     case 'doors':
-      S.doorsUntil = Date.now() + DOOR_DURATION_MS; break;
+      S.doorsUntil = Date.now() + DOOR_DURATION_MS; if(typeof Sfx!=='undefined') Sfx.door(); break;
 
     // ── Manches / score ──
     case 'new-round':
