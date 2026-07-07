@@ -28,6 +28,7 @@ let stamina = STAMINA_MAX;
 
 // Bond du chat (élan)
 let dashFrames = 0, dashVX = 0, dashVY = 0;
+let idleSoundIn = 300;  // frames avant le prochain miaou/couinement d'ambiance
 
 // Actions spéciales
 let squeakReady = 0, climbReady = 0, hisReady = 0, flairReady = 0;

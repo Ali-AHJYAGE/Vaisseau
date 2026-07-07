@@ -34,6 +34,10 @@ function update(){
     const me=localMode?S.inno:(myRole==='imposteur'?S.impo:S.inno);
     if(roomOf(me.x,me.y)==='Salon' && Math.random()<0.6) Sfx.crackle();
   }
+  // Miaou / couinement d'ambiance de ton perso, de temps en temps
+  if(idleSoundIn>0) idleSoundIn--;
+  else { idleSoundIn=420+Math.floor(Math.random()*360);
+    if(typeof Sfx!=='undefined'){ const cat=localMode?(Math.random()<0.5):(myRole==='imposteur'); (cat?Sfx.meow:Sfx.squeak)(); } }
 
   if(localMode){
     moveLocal(); catTrail();
@@ -295,6 +299,7 @@ function startRound(role, round){
   ventCooldown=tpCooldown=0;
   stamina=STAMINA_MAX; scanUntil=0; scanCharges=0; dashFrames=0;
   squeakReady=climbReady=hisReady=flairReady=0; freezeUntil=hideUntil=flairUntil=0; decoy=null; innoTrail=[];
+  idleSoundIn=240;
   takenWeapons=new Set(); takenGadgets=new Set();
   minigameActive=null; partnerGoneAt=0; roundReported=false; _bannerSounded=false;
   _lastWorld='';
