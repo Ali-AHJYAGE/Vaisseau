@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v23';
+const VERSION='v24';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -42,6 +42,13 @@ const SHIELD_ABSORB=1;          // encaisse 1 coup
 // ── Bond du chat (attaque « Bond ») ────────────────────────
 const DASH_FRAMES=9;            // durée de l'élan
 const DASH_SPEED=7.5;           // vitesse de l'élan
+
+// ── Actions spéciales (frames pour cd, ms pour durées) ─────
+const SQUEAK_CD=420;            // souris : couinement (leurre)
+const DECOY_MS=4500;            // durée du leurre vu par le chat
+const CLIMB_CD=600, CLIMB_MS=3200;   // souris : grimper/camouflage
+const HISS_CD=540, HISS_RANGE=130, FREEZE_MS=1100; // chat : feulement (fige la souris)
+const FLAIR_CD=540, FLAIR_MS=2600;   // chat : flair (révèle + piste)
 
 // ── Manches / revanche ─────────────────────────────────────
 const WINS_NEEDED=2;            // best-of 3 (premier à 2)
@@ -142,5 +149,16 @@ const DOORS=[
   {id:'d2', x:1130, y:590,  w:44, h:60},  // hall Hub↔Comms
   {id:'d3', x:660,  y:770,  w:60, h:44},  // hall Soute↔Hub
   {id:'d4', x:1380, y:840,  w:60, h:44},  // hall Comms↔Quartiers
+];
+
+// ── Éléments de décor de la MAISON (visuels, hors salles) ──
+const MAP_DECOR=[
+  {type:'stairs', x:665, y:400, w:50, h:110},   // hall vertical (haut)
+  {type:'stairs', x:1385,y:760, w:50, h:110},   // hall Bureau→SdB
+  {type:'grate',  x:990, y:960, r:15},          // bouche d'aération au sol
+  {type:'grate',  x:390, y:820, r:14},
+  {type:'crack',  x:1150,y:250, w:110},         // fissures
+  {type:'crack',  x:200, y:1060,w:90},
+  {type:'crack',  x:900, y:520, w:80},
 ];
 

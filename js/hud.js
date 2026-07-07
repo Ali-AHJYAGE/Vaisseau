@@ -9,7 +9,11 @@ const _btnVent   = document.getElementById('btn-vent');
 const _btnSab    = document.getElementById('btn-sab');
 const _btnOxy    = document.getElementById('btn-oxy');
 const _btnDoor   = document.getElementById('btn-door');
-const _ALLBTN=[_btnTask,_btnTp,_btnScan,_btnAttack,_btnVent,_btnSab,_btnOxy,_btnDoor];
+const _btnSqueak = document.getElementById('btn-squeak');
+const _btnClimb  = document.getElementById('btn-climb');
+const _btnHiss   = document.getElementById('btn-hiss');
+const _btnFlair  = document.getElementById('btn-flair');
+const _ALLBTN=[_btnTask,_btnTp,_btnScan,_btnSqueak,_btnClimb,_btnAttack,_btnVent,_btnHiss,_btnFlair,_btnSab,_btnOxy,_btnDoor];
 
 function _show(btn,cls,html){ if(!btn)return; btn.style.display='flex'; btn.className='act-btn '+cls; btn.innerHTML=html; }
 function _hide(btn){ if(btn) btn.style.display='none'; }
@@ -58,7 +62,7 @@ function _updateActionPanel(){
   const now=Date.now();
 
   if(localMode||myRole==='innocent'){
-    _hide(_btnAttack);_hide(_btnVent);_hide(_btnSab);_hide(_btnOxy);_hide(_btnDoor);
+    _hide(_btnAttack);_hide(_btnVent);_hide(_btnHiss);_hide(_btnFlair);_hide(_btnSab);_hide(_btnOxy);_hide(_btnDoor);
 
     const nearTask=TASKS.some(t=>!S.tasks[t.id]&&dist(S.inno,t)<44);
     _show(_btnTask,'act-btn act-inno'+(nearTask?' ready':''),'<span class="ico">🧀</span>Grignoter');
@@ -66,9 +70,16 @@ function _updateActionPanel(){
     _show(_btnTp,'act-btn act-tp'+(nearTP?' ready':''),'<span class="ico">🕳️</span>Trou');
     if(scanCharges>0) _show(_btnScan,'act-btn act-scan ready','<span class="ico">🔔</span>Clochette');
     else _hide(_btnScan);
+    // Couiner (leurre)
+    const sqRdy=squeakReady<=0, sqSecs=squeakReady>0?Math.ceil(squeakReady/60):0;
+    _show(_btnSqueak,'act-btn act-inno'+(sqRdy?' ready':''),`<span class="ico">🗯️</span>${sqRdy?'Couiner':sqSecs+'s'}`);
+    // Cacher / camouflage
+    const clRdy=climbReady<=0, clSecs=climbReady>0?Math.ceil(climbReady/60):0;
+    const hidden=Date.now()<hideUntil;
+    _show(_btnClimb,'act-btn act-scan'+(clRdy&&!hidden?' ready':''),`<span class="ico">🫥</span>${hidden?'Caché':clRdy?'Cacher':clSecs+'s'}`);
 
   } else {
-    _hide(_btnTask);_hide(_btnTp);_hide(_btnScan);
+    _hide(_btnTask);_hide(_btnTp);_hide(_btnScan);_hide(_btnSqueak);_hide(_btnClimb);
 
     // Attaque (selon arme)
     const wp=WEAPON_TYPES[S.impo.weapon]||WEAPON_TYPES.knife;
@@ -81,6 +92,13 @@ function _updateActionPanel(){
     // Passage du chat
     const nearVent=VENTS.some(v=>dist(S.impo,v)<44&&ventCooldown<=0);
     _show(_btnVent,'act-btn act-vent'+(nearVent?' ready':''),'<span class="ico">🐾</span>Passage');
+
+    // Feuler (fige la souris si proche)
+    const hisRdy=hisReady<=0, hisSecs=hisReady>0?Math.ceil(hisReady/60):0;
+    _show(_btnHiss,'act-btn act-impo'+(hisRdy?' ready':''),`<span class="ico">😾</span>${hisRdy?'Feuler':hisSecs+'s'}`);
+    // Flairer (révèle la piste)
+    const flRdy=flairReady<=0, flSecs=flairReady>0?Math.ceil(flairReady/60):0;
+    _show(_btnFlair,'act-btn act-scan'+(flRdy?' ready':''),`<span class="ico">👃</span>${flRdy?'Flairer':flSecs+'s'}`);
 
     // Éteindre
     const sabRdy=sabReady<=0, sabSecs=sabReady>0?Math.ceil(sabReady/60):0;

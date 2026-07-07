@@ -96,6 +96,11 @@ function handleMessage(m) {
       S.oxygenUntil = 0; break;
     case 'doors':
       S.doorsUntil = Date.now() + DOOR_DURATION_MS; if(typeof Sfx!=='undefined') Sfx.door(); break;
+    case 'decoy':
+      decoy = { x:m.x, y:m.y, until: Date.now()+DECOY_MS }; break;
+    case 'hiss':
+      if (myRole === 'innocent') { freezeUntil = Date.now()+FREEZE_MS; if(typeof Sfx!=='undefined') Sfx.hiss(); shake(6,300); flash('rgba(255,255,255,0.35)',200); }
+      break;
 
     // ── Manches / score ──
     case 'new-round':
@@ -145,7 +150,7 @@ function send(obj) {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
-function sendInno() { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive } }); }
+function sendInno() { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive, hidden: S.inno.hidden, hideObj: S.inno.hideObj } }); }
 function sendImpo() { send({ type: 'impo', x: S.impo.x, y: S.impo.y, weapon: S.impo.weapon }); }
 
 // Le monde (tâches, fin) change rarement : on ne l'envoie que s'il change
@@ -163,5 +168,7 @@ function sendSabotage() { send({ type: 'sabotage' }); }
 function sendOxygen()   { send({ type: 'oxygen' }); }
 function sendOxyFix()   { send({ type: 'oxyfix' }); }
 function sendDoors()    { send({ type: 'doors' }); }
+function sendDecoy(x,y) { send({ type: 'decoy', x, y }); }
+function sendHiss()     { send({ type: 'hiss' }); }
 
 connectWS();

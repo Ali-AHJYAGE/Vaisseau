@@ -61,6 +61,9 @@ function draw(){
     ctx.fillText(r.name.toUpperCase(),r.x+r.w/2,r.y+20); ctx.letterSpacing='0px';
   }
 
+  // Éléments de maison (escaliers, bouches d'aération, fissures)
+  drawMapExtras();
+
   // Portes
   const dShut=doorsClosed();
   for(const d of DOORS){ rpath(d.x,d.y,d.w,d.h,5); ctx.fillStyle=dShut?'rgba(255,90,110,0.95)':'rgba(150,165,220,0.3)'; ctx.fill();
@@ -103,12 +106,28 @@ function draw(){
 
   // Personnages
   if(S.impo.present) drawBean(S.impo,C.imposteur,false,'imposteur');
-  if(iAmInno||S.inno.synced) drawBean(S.inno,C.innocent,!S.inno.alive,'innocent');
+  const showInno=iAmInno||S.inno.synced;
+  if(showInno){
+    const nowC=Date.now();
+    const flairing=(myRole==='imposteur'||localMode)&&nowC<flairUntil;
+    const camo=S.inno.hidden && !flairing;   // le flair perce le camouflage
+    if(camo && myRole==='imposteur' && !localMode){
+      drawHidden(S.inno.x,S.inno.y,S.inno.hideObj);            // le chat ne voit qu'un objet
+    } else if(camo){
+      drawHidden(S.inno._rx??S.inno.x,S.inno._ry??S.inno.y,S.inno.hideObj);
+      ctx.globalAlpha=0.5; drawBean(S.inno,C.innocent,false,'innocent'); ctx.globalAlpha=1; // la souris se voit en transparent
+    } else {
+      drawBean(S.inno,C.innocent,!S.inno.alive,'innocent');
+      if(nowC<freezeUntil){ ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillText('❄️',(S.inno._rx??S.inno.x),(S.inno._ry??S.inno.y)-PLAYER_R-6+Math.sin(frame*0.2)*2); }
+    }
+  }
 
   ctx.restore();
 
   if(!localMode) drawFog(cx,cy);
   drawScanReveal(cx,cy);
+  drawDecoyBlip(cx,cy);
+  drawFlairReveal(cx,cy);
   drawFlash();
   drawAlarm();
   drawMinimap();
@@ -370,6 +389,52 @@ function drawScanReveal(cx,cy){
   const sx=S.impo.x-cx, sy=S.impo.y-cy, p=Math.sin(frame*0.3)*3+10;
   ctx.beginPath(); ctx.arc(sx,sy,p+8,0,TAU); ctx.strokeStyle='rgba(92,200,255,.9)'; ctx.lineWidth=2.5; ctx.stroke();
   ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText('😈',sx,sy+6);
+}
+
+// Souris camouflée : déguisée en objet (fromage / tasse / livre)
+function drawHidden(x,y,obj){
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x,y+PLAYER_R*0.8,PLAYER_R*0.8,PLAYER_R*0.3,0,0,TAU); ctx.fill();
+  if(obj===2){ fRR(x-12,y-9,24,20,4,'#eae0d4'); oRR(x-12,y-9,24,20,4,'#b0a090',2);
+    ctx.strokeStyle='#b0a090'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(x+14,y+1,6,-1,1); ctx.stroke(); }
+  else if(obj===3){ fRR(x-13,y-9,26,18,3,'#c0563f'); oRR(x-13,y-9,26,18,3,'#7a3222',2); fRR(x-13,y-9,5,18,2,'#e0b060'); }
+  else cheese(x,y+4,13);
+}
+
+// Escaliers, bouches d'aération, fissures (visuel)
+function drawMapExtras(){
+  for(const d of MAP_DECOR){
+    if(d.type==='stairs'){ const n=6, sh=d.h/n;
+      for(let i=0;i<n;i++){ const yy=d.y+i*sh; fRR(d.x,yy,d.w,sh-2,2,i%2?'#7a5a40':'#8f6c4c'); oRR(d.x,yy,d.w,sh-2,2,'#5e3c26',1); } }
+    else if(d.type==='grate'){ fRR(d.x-d.r,d.y-d.r,d.r*2,d.r*2,3,'#241a14'); oRR(d.x-d.r,d.y-d.r,d.r*2,d.r*2,3,'#5a4432',2);
+      ctx.strokeStyle='#5a4432'; ctx.lineWidth=1.5; for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(d.x-d.r+3,d.y+i*5); ctx.lineTo(d.x+d.r-3,d.y+i*5); ctx.stroke(); } }
+    else if(d.type==='crack'){ ctx.strokeStyle='rgba(0,0,0,0.32)'; ctx.lineWidth=2; ctx.beginPath();
+      let x=d.x-d.w/2; ctx.moveTo(x,d.y); for(let i=0;i<5;i++){ x+=d.w/5; ctx.lineTo(x,d.y+(i%2?6:-5)); } ctx.stroke(); }
+  }
+}
+
+// Faux blip (leurre du couinement) vu par le chat, par-dessus le fog
+function drawDecoyBlip(cx,cy){
+  if(!decoy || Date.now()>=decoy.until) return;
+  if(!(myRole==='imposteur'||localMode)) return;
+  const sx=decoy.x-cx, sy=decoy.y-cy, p=Math.sin(frame*0.3)*0.4+0.6;
+  ctx.save(); ctx.globalAlpha=p;
+  ctx.strokeStyle='rgba(255,220,120,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,13,0,TAU); ctx.stroke();
+  ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillText('🐭❔',sx,sy+5); ctx.restore();
+}
+
+// Flair du chat : révèle la souris + sa piste, par-dessus le fog
+function drawFlairReveal(cx,cy){
+  if(Date.now()>=flairUntil) return;
+  if(!(myRole==='imposteur'||localMode)) return;
+  ctx.save();
+  for(let i=0;i<innoTrail.length;i++){ const t=innoTrail[i];
+    ctx.globalAlpha=(i/innoTrail.length)*0.55; ctx.fillStyle='#ffd23f';
+    ctx.beginPath(); ctx.arc(t.x-cx,t.y-cy,3,0,TAU); ctx.fill(); }
+  ctx.globalAlpha=1;
+  const sx=S.inno.x-cx, sy=S.inno.y-cy, p=Math.sin(frame*0.3)*3+10;
+  ctx.strokeStyle='rgba(255,210,63,.9)'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(sx,sy,p+6,0,TAU); ctx.stroke();
+  ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText('🐭',sx,sy+6);
+  ctx.restore();
 }
 
 // État d'alerte plein écran pendant un sabotage dangereux

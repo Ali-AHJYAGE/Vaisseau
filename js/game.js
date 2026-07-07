@@ -19,6 +19,10 @@ function update(){
   if(doorReady>0)   doorReady--;
   if(ventCooldown>0)ventCooldown--;
   if(tpCooldown>0)  tpCooldown--;
+  if(squeakReady>0) squeakReady--;
+  if(climbReady>0)  climbReady--;
+  if(hisReady>0)    hisReady--;
+  if(flairReady>0)  flairReady--;
 
   // Sirène d'alerte pendant un sabotage dangereux
   const now=Date.now();
@@ -26,16 +30,25 @@ function update(){
   if((trapOn||darkOn) && frame%44===0 && typeof Sfx!=='undefined') Sfx.alarm();
 
   if(localMode){
-    moveLocal();
+    moveLocal(); catTrail();
   } else if(myRole==='innocent'){
-    if(S.inno.alive) moveEnt(S.inno, inputVec, localSpeed(inputVec), true);
+    S.inno.hidden = now<hideUntil;                       // camouflage actif ?
+    const frozen = now<freezeUntil;
+    const v=inputVec();
+    if(S.inno.hidden && (v.dx||v.dy)){ hideUntil=0; S.inno.hidden=false; } // bouger démasque
+    if(S.inno.alive && !frozen) moveEnt(S.inno, inputVec, localSpeed(inputVec), true);
     handleHeal(); handleOxyRepair(); handleInnoPickups(); checkWin();
     if(frame%NET_EVERY===0){ sendInno(); sendWorld(); }
   } else {
-    moveImpo();
+    moveImpo(); catTrail();
     handleImpoPickups();
     if(frame%NET_EVERY===0) sendImpo();
   }
+}
+
+// Mémorise la piste récente de la souris (pour le flair du chat)
+function catTrail(){
+  if(frame%5===0){ innoTrail.push({x:S.inno.x,y:S.inno.y}); if(innoTrail.length>26) innoTrail.shift(); }
 }
 
 // Déplacement du chat : élan (bond) prioritaire, sinon marche normale
@@ -62,12 +75,16 @@ function localSpeed(vecFn){
 }
 
 function moveLocal(){
+  const now=Date.now();
+  S.inno.hidden = now<hideUntil;
+  const frozen = now<freezeUntil;
   const vi=inputVecInno();
   const movingI = vi.dx!==0||vi.dy!==0;
+  if(S.inno.hidden && movingI){ hideUntil=0; S.inno.hidden=false; }
   const sprintI = isSprinting() && stamina>0 && movingI;
   if(sprintI) stamina=Math.max(0,stamina-STAMINA_DRAIN);
   else        stamina=Math.min(STAMINA_MAX,stamina+STAMINA_REGEN);
-  if(S.inno.alive) moveEnt(S.inno, inputVecInno, SPEED*(sprintI?SPRINT_MULT:1), true);
+  if(S.inno.alive && !frozen) moveEnt(S.inno, inputVecInno, SPEED*(sprintI?SPRINT_MULT:1), true);
   if(dashFrames>0){
     const nx=S.impo.x+dashVX, ny=S.impo.y+dashVY;
     if(canMove(nx,S.impo.y,false)) S.impo.x=nx;
@@ -121,7 +138,7 @@ function checkWin(){
 }
 
 function applyHit(dmg){
-  if(!S.inno.alive) return;
+  if(!S.inno.alive || S.inno.hidden) return;   // camouflée = intouchable
   if(S.inno.shield>0){ S.inno.shield--; Sfx.heal(); sparkle(S.inno.x,S.inno.y,C.gadget); flash('rgba(92,200,255,0.35)',200); return; }
   S.inno.hearts=Math.max(0, S.inno.hearts-(dmg||1));
   Sfx.hurt(); shake(7,320); flash('rgba(255,60,80,0.5)',260); emit(S.inno.x,S.inno.y,C.imposteur,16,3.4,32);
@@ -211,15 +228,51 @@ function doSabDoors(){
   if(!localMode) sendDoors(); return true;
 }
 
+// SOURIS — couiner : crée un leurre sonore ailleurs (le chat voit un faux blip)
+function doSqueak(){
+  if(S.over||squeakReady>0) return false;
+  if(!(myRole==='innocent'||localMode)) return false;
+  const ang=Math.random()*Math.PI*2, d=100+Math.random()*90;
+  const tx=S.inno.x+Math.cos(ang)*d, ty=S.inno.y+Math.sin(ang)*d;
+  squeakReady=SQUEAK_CD; Sfx.squeak();
+  if(localMode) decoy={x:tx,y:ty,until:Date.now()+DECOY_MS}; else sendDecoy(tx,ty);
+  return true;
+}
+// SOURIS — grimper/camouflage : se déguise en objet, intouchable tant qu'immobile
+function doClimb(){
+  if(S.over||climbReady>0) return false;
+  if(!(myRole==='innocent'||localMode)) return false;
+  hideUntil=Date.now()+CLIMB_MS; S.inno.hideObj=1+Math.floor(Math.random()*3); climbReady=CLIMB_CD;
+  Sfx.poof(); puff(S.inno.x,S.inno.y);
+  return true;
+}
+// CHAT — feuler : fige la souris de peur si elle est proche
+function doHiss(){
+  if(S.over||hisReady>0) return false;
+  if(!(myRole==='imposteur'||localMode)) return false;
+  hisReady=HISS_CD; Sfx.hiss(); shake(5,240); emit(S.impo.x,S.impo.y,'#ffffff',16,3.2,26);
+  if(dist(S.impo,S.inno)<HISS_RANGE && !S.inno.hidden){
+    if(localMode) freezeUntil=Date.now()+FREEZE_MS; else sendHiss();
+  }
+  return true;
+}
+// CHAT — flairer : révèle la souris + sa piste quelques secondes
+function doFlair(){
+  if(S.over||flairReady>0) return false;
+  if(!(myRole==='imposteur'||localMode)) return false;
+  flairUntil=Date.now()+FLAIR_MS; flairReady=FLAIR_CD; Sfx.sniff();
+  return true;
+}
+
 // ── Raccourci clavier (Espace) ─────────────────────────────
 function onAction(){
   if(S.over) return;
-  if(localMode||myRole==='innocent') doTask()||doTeleport()||doScan();
-  else doAttack()||doVent()||doSabLights()||doSabOxy()||doSabDoors();
+  if(localMode||myRole==='innocent') doTask()||doTeleport()||doScan()||doSqueak()||doClimb();
+  else doAttack()||doVent()||doSabLights()||doSabOxy()||doSabDoors()||doHiss()||doFlair();
 }
-function onActionImpo(){ // Entrée = imposteur en mode local
+function onActionImpo(){ // Entrée = chat en mode local
   if(S.over||!localMode) return;
-  doAttack()||doVent()||doSabLights()||doSabOxy()||doSabDoors();
+  doAttack()||doVent()||doSabLights()||doSabOxy()||doSabDoors()||doHiss()||doFlair();
 }
 
 // ============================================================
@@ -228,13 +281,14 @@ function onActionImpo(){ // Entrée = imposteur en mode local
 function startRound(role, round){
   myRole = role;
   roundNum = round;
-  S.inno = { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false };
+  S.inno = { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0 };
   S.impo = { x:820, y:540, present:(role==='imposteur'), weapon:'knife' };
   S.tasks = { t1:false, t2:false, t3:false, t4:false };
   S.sabotageUntil=0; S.oxygenUntil=0; S.doorsUntil=0; S.over=null;
   attackReady=healReady=sabReady=oxyReady=doorReady=0;
   ventCooldown=tpCooldown=0;
   stamina=STAMINA_MAX; scanUntil=0; scanCharges=0; dashFrames=0;
+  squeakReady=climbReady=hisReady=flairReady=0; freezeUntil=hideUntil=flairUntil=0; decoy=null; innoTrail=[];
   takenWeapons=new Set(); takenGadgets=new Set();
   minigameActive=null; partnerGoneAt=0; roundReported=false; _bannerSounded=false;
   _lastWorld='';

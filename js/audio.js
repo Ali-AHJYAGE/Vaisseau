@@ -63,5 +63,9 @@ const Sfx = (() => {
     lose:    ()=>[440,330,220].forEach((f,i)=>tone(f,0.28,'sawtooth',0.28,null,i*0.15)),
     alarm:   ()=>{ tone(900,0.16,'square',0.3,660); tone(660,0.16,'square',0.3,900,0.17); }, // sirène 2 tons
     whoosh:  ()=>{ noise(0.18,0.28); tone(260,0.22,'sine',0.22,760); },                       // bond
+    squeak:  ()=>{ tone(1400,0.08,'square',0.22,1900); tone(1700,0.09,'square',0.2,1200,0.08); }, // couinement
+    hiss:    ()=>{ noise(0.35,0.32); tone(320,0.3,'sawtooth',0.14,140); },                    // feulement
+    sniff:   ()=>{ noise(0.12,0.18); noise(0.12,0.18,0.16); },                                // flair
+    poof:    ()=>{ noise(0.22,0.24); tone(500,0.18,'sine',0.16,900); },                       // camouflage
   };
 })();

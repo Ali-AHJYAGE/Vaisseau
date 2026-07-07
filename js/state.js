@@ -6,7 +6,7 @@ let localMode = false;
 let gameStarted = false;
 
 const S = {
-  inno: { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false },
+  inno: { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0 },
   impo: { x:820, y:540, present:false, weapon:'knife' },
   tasks: { t1:false, t2:false, t3:false, t4:false },
   sabotageUntil: 0,   // lumières (timestamp ms)
@@ -28,6 +28,14 @@ let stamina = STAMINA_MAX;
 
 // Bond du chat (élan)
 let dashFrames = 0, dashVX = 0, dashVY = 0;
+
+// Actions spéciales
+let squeakReady = 0, climbReady = 0, hisReady = 0, flairReady = 0;
+let freezeUntil = 0;   // souris figée par le feulement (ms)
+let hideUntil   = 0;   // souris cachée/camouflée (ms)
+let flairUntil  = 0;   // chat renifle : révèle la souris (ms)
+let decoy       = null;// leurre {x,y,until} vu par le chat
+let innoTrail   = [];  // historique positions souris (côté chat) pour le flair
 
 // Innocent — gadgets
 let scanUntil = 0;        // révèle l'imposteur jusqu'à ce timestamp

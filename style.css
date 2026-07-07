@@ -60,7 +60,8 @@ canvas {
 #action-panel {
   position:absolute;
   bottom:14px; right:14px;
-  display:flex; flex-direction:column; gap:7px;
+  display:flex; flex-direction:column; flex-wrap:wrap; align-content:flex-end;
+  max-height:calc(100% - 28px); gap:7px;
   z-index:5; pointer-events:none; /* enfants gèrent pointer-events */
 }
 .act-btn {
@@ -209,8 +210,8 @@ canvas {
   }
   /* Contrôles un peu plus grands et remontés pour le pouce */
   #joystick-zone { bottom:10px; left:10px; width:88px; height:88px; }
-  #action-panel  { bottom:8px; right:8px; gap:6px; }
-  .act-btn { width:52px; height:52px; font-size:9px; }
+  #action-panel  { bottom:8px; right:8px; gap:6px; max-height:calc(100dvh - 16px); }
+  .act-btn { width:50px; height:50px; font-size:8px; }
   .act-btn .ico { font-size:17px; }
   #btn-sprint { bottom:12px; left:108px; width:52px; height:52px; font-size:21px; }
   #menu { max-width:none; padding:10px 20px; gap:10px; }
