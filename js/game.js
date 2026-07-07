@@ -29,6 +29,12 @@ function update(){
   const trapOn=now<S.oxygenUntil, darkOn=now<S.sabotageUntil&&(myRole==='innocent'||localMode);
   if((trapOn||darkOn) && frame%44===0 && typeof Sfx!=='undefined') Sfx.alarm();
 
+  // Ambiance : crépitement de cheminée dans le Salon
+  if(frame%50===0 && typeof Sfx!=='undefined'){
+    const me=localMode?S.inno:(myRole==='imposteur'?S.impo:S.inno);
+    if(roomOf(me.x,me.y)==='Salon' && Math.random()<0.6) Sfx.crackle();
+  }
+
   if(localMode){
     moveLocal(); catTrail();
   } else if(myRole==='innocent'){

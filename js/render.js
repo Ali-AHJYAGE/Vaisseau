@@ -286,7 +286,7 @@ function cheese(x,y,s){ ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.moveTo(x-s
   ctx.strokeStyle='#c9a01f'; ctx.lineWidth=1.5; ctx.stroke(); dot2(x-s*0.3,y+s*0.15,1.5,'#f2c024'); dot2(x+s*0.35,y,1.3,'#f2c024'); }
 function cheeseWheel(x,y,r){ dot2(x,y,r,'#ffd23f'); ctx.strokeStyle='#c9a01f'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.stroke();
   ctx.fillStyle='#f2c024'; ctx.beginPath(); ctx.moveTo(x,y); ctx.arc(x,y,r,-0.6,0.1); ctx.closePath(); ctx.fill(); }
-function plantPot(x,y){ fRR(x-8,y,16,14,3,'#c86a3a'); for(const o of [[-5,-4],[5,-4],[0,-11]]) dot2(x+o[0],y+o[1],7,'#4fbf6a'); }
+function plantPot(x,y){ fRR(x-8,y,16,14,3,'#c86a3a'); const sw=Math.sin(frame*0.04+x*0.1)*2; for(const o of [[-5,-4],[5,-4],[0,-11]]) dot2(x+o[0]+sw*(o[1]<-6?1.4:0.7),y+o[1],7,'#4fbf6a'); }
 function rug(x,y,w,h,c){ ctx.globalAlpha=0.5; fRR(x-w/2,y-h/2,w,h,10,c); ctx.globalAlpha=1; oRR(x-w/2,y-h/2,w,h,10,shade(c,-40),2); }
 function tvSet(x,y,w){ fRR(x-w/2,y-w*0.32,w,w*0.62,4,'#1a1420'); oRR(x-w/2,y-w*0.32,w,w*0.62,4,'#0a0810',2);
   ctx.save(); rpath(x-w/2+3,y-w*0.32+3,w-6,w*0.62-6,2); ctx.clip(); ctx.globalAlpha=0.5; ctx.fillStyle='#5cc8ff'; ctx.fillRect(x-w/2,y-w*0.32,w,w*0.62); ctx.globalAlpha=1; ctx.restore(); }
@@ -434,6 +434,9 @@ function windowNight(x,y,w,h){
   oRR(x-w/2,y-h/2,w,h,4,'#8a6a4a',3);
   ctx.strokeStyle='#8a6a4a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,y-h/2); ctx.lineTo(x,y+h/2); ctx.moveTo(x-w/2,y); ctx.lineTo(x+w/2,y); ctx.stroke();
   fRR(x-w/2-4,y-h/2-2,8,h+4,3,'#c0563f'); fRR(x+w/2-4,y-h/2-2,8,h+4,3,'#c0563f'); // rideaux
+  // rayon de lune qui descend dans la pièce
+  ctx.save(); ctx.globalAlpha=0.09; ctx.fillStyle='#fff4c8';
+  ctx.beginPath(); ctx.moveTo(x-w*0.28,y+h/2); ctx.lineTo(x+w*0.28,y+h/2); ctx.lineTo(x+w*0.7,y+h/2+80); ctx.lineTo(x-w*0.7,y+h/2+80); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 function garland(x1,x2,y,n){
   ctx.strokeStyle='rgba(90,60,40,.5)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x1,y);
@@ -441,32 +444,71 @@ function garland(x1,x2,y,n){
   const cols=['#ff6b6b','#ffd23f','#5fbf6a','#5c8fe0','#c77dff'];
   for(let i=0;i<n;i++){ const xx=x1+(x2-x1)*((i+0.5)/n); const on=(Math.floor(frame*0.1)+i)%2; dot2(xx,y+8,3,on?cols[i%cols.length]:'#5a4a3a'); }
 }
+// ── petites vies animées ───────────────────────────────────
+function lampHalo(x,y,c){ glowCircle(x,y,17,c||'rgba(255,224,138,0.20)'); }
+function kettle(x,y){
+  fRR(x-11,y-7,22,15,5,'#c8ccd2'); oRR(x-11,y-7,22,15,5,'#8a909a',2);
+  fRR(x+9,y-3,7,4,2,'#8a909a'); fRR(x-4,y-12,8,4,3,'#8a909a');
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=3; ctx.lineCap='round';
+  for(let i=0;i<2;i++){ const ph=frame*0.06+i*2.2; ctx.globalAlpha=0.4-i*0.12; ctx.beginPath(); ctx.moveTo(x+12,y-6); ctx.quadraticCurveTo(x+12+Math.sin(ph)*7,y-18,x+12+Math.sin(ph+1)*4,y-30); ctx.stroke(); }
+  ctx.globalAlpha=1;
+}
+function fishbowl(x,y){
+  ctx.beginPath(); ctx.arc(x,y,13,0,TAU); ctx.fillStyle='rgba(130,200,240,.5)'; ctx.fill(); ctx.strokeStyle='#bfe4ee'; ctx.lineWidth=2.5; ctx.stroke();
+  fRR(x-11,y+9,22,5,2,'#8a6a4a');
+  const dir=Math.sin(frame*0.08), fx=x+dir*6; ctx.fillStyle='#ff8a3d'; dot2(fx,y,4);
+  ctx.beginPath(); const s=dir>0?1:-1; ctx.moveTo(fx-6*s,y); ctx.lineTo(fx-12*s,y-4); ctx.lineTo(fx-12*s,y+4); ctx.closePath(); ctx.fill();
+  dot2(fx+3*s,y-1,1,'#000');
+}
+function yarn(x,y){ dot2(x,y,9,'#e0736a'); ctx.strokeStyle='#a84e46'; ctx.lineWidth=1.5; for(let a=0;a<3;a++){ ctx.beginPath(); ctx.ellipse(x,y,8,4,a*1.05,0,TAU); ctx.stroke(); } }
+function spiderWeb(x,y){
+  ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=1;
+  for(let a=0;a<4;a++){ const an=a*Math.PI/4; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+Math.cos(an)*18,y+Math.sin(an)*18); ctx.stroke(); }
+  for(let rr=6;rr<=18;rr+=6){ ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*1.1); ctx.stroke(); }
+  const sy=y+16+Math.sin(frame*0.05)*4; ctx.beginPath(); ctx.moveTo(x+7,y+7); ctx.lineTo(x+7,sy); ctx.stroke(); dot2(x+7,sy,3,'#2a2320');
+}
+function bubbles(x,y){ for(let i=0;i<4;i++){ const t=(frame*0.02+i*0.25)%1; ctx.globalAlpha=0.5*(1-t); dot2(x+Math.sin(i*2+frame*0.05)*10,y-t*22,2+ (1-t)*2,'#eaffff'); } ctx.globalAlpha=1; }
+function dust(r){ ctx.fillStyle='rgba(255,240,200,0.10)'; for(let i=0;i<6;i++){ const px=r.x+30+(((i*97)+frame*0.4)%(r.w-60)); const py=r.y+44+((i*53)%(r.h-80))+Math.sin(frame*0.03+i)*5; ctx.beginPath(); ctx.arc(px,py,1.4,0,TAU); ctx.fill(); } }
+function butterfly(x,y){ const f=Math.abs(Math.sin(frame*0.4)); const yy=y+Math.sin(frame*0.05)*7, xx=x+Math.cos(frame*0.04)*12; ctx.fillStyle='#ff9ec8'; ctx.beginPath(); ctx.ellipse(xx-3,yy,3,2+f*4,0.5,0,TAU); ctx.ellipse(xx+3,yy,3,2+f*4,-0.5,0,TAU); ctx.fill(); dot2(xx,yy,1.5,'#5a3a4a'); }
+
 function drawRoomExtras(r,th){
-  const X=r.x,Y=r.y,W=r.w,H=r.h;
+  const X=r.x,Y=r.y,W=r.w,H=r.h, midX=X+W/2;
   switch(r.name){
     case 'Salon':
-      fireplace(X+W-48,Y+H-40); garland(X+22,X+W-22,Y+34,6); break;
+      fireplace(X+W-48,Y+H-40); garland(X+22,X+W-22,Y+34,6);
+      lampHalo(X+33,Y+40); yarn(midX+34,Y+H*0.56+2); dust(r);
+      break;
     case 'Salle à manger':
-      garland(X+22,X+W-22,Y+30,7); windowNight(X+130,Y+42,58,32); break;
+      garland(X+22,X+W-22,Y+30,7); windowNight(X+130,Y+42,58,32);
+      lampHalo(midX,Y+H*0.52-18,'rgba(255,200,120,0.22)'); dust(r);
+      break;
     case 'Cuisine':
-      windowNight(X+W-46,Y+48,50,30); break;
+      windowNight(X+W-46,Y+48,50,30); kettle(midX+2,Y+H-30); dust(r);
+      break;
     case 'Chambre':
-      windowNight(X+W-46,Y+46,52,32); break;
+      windowNight(X+W-46,Y+46,52,32); lampHalo(X+W-76,Y+H-46); butterfly(midX,Y+80);
+      break;
     case 'Salle de bain': {
-      rug(X+44,Y+H-20,42,15,'#7ac8e0');           // tapis de bain
-      const dy=Y+H-58; dot2(X+40,dy,7,'#ffd23f'); dot2(X+35,dy-5,4,'#ffd23f'); // canard
+      rug(X+44,Y+H-20,42,15,'#7ac8e0');
+      const dy=Y+H-58; dot2(X+40,dy,7,'#ffd23f'); dot2(X+35,dy-5,4,'#ffd23f');
       ctx.fillStyle='#ff8a3d'; ctx.beginPath(); ctx.moveTo(X+31,dy-5); ctx.lineTo(X+27,dy-4); ctx.lineTo(X+31,dy-3); ctx.closePath(); ctx.fill();
-      dot2(X+36,dy-6,1.2,'#000'); break;
+      dot2(X+36,dy-6,1.2,'#000');
+      bubbles(X+W-52,Y+H-42);
+      break;
     }
     case 'Bureau':
-      fRR(X+30,Y+H-60,4,18,1,'#5a4a3a'); dot2(X+34,Y+H-60,6,'#ffe08a'); // lampe
-      fRR(X+50,Y+H-50,14,10,1,'#efe8dc'); fRR(X+55,Y+H-52,14,10,1,'#f6f0e6'); break; // papiers
+      fRR(X+30,Y+H-60,4,18,1,'#5a4a3a'); dot2(X+34,Y+H-60,6,'#ffe08a'); lampHalo(X+34,Y+H-60);
+      fRR(X+50,Y+H-50,14,10,1,'#efe8dc'); fRR(X+55,Y+H-52,14,10,1,'#f6f0e6');
+      fishbowl(X+W-30,Y+52);
+      break;
     case 'Garde-manger':
-      garland(X+18,X+W-18,Y+30,5); break;
+      garland(X+18,X+W-18,Y+30,5); spiderWeb(X+W-30,Y+42); dust(r);
+      break;
     case 'Buanderie':
-      // fil à linge supplémentaire déjà présent ; on ajoute un balai
       ctx.strokeStyle='#8a5a2a'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(X+W-30,Y+50); ctx.lineTo(X+W-30,Y+92); ctx.stroke();
-      ctx.fillStyle='#d9b45a'; ctx.beginPath(); ctx.moveTo(X+W-38,Y+92); ctx.lineTo(X+W-22,Y+92); ctx.lineTo(X+W-26,Y+104); ctx.lineTo(X+W-34,Y+104); ctx.closePath(); ctx.fill(); break;
+      ctx.fillStyle='#d9b45a'; ctx.beginPath(); ctx.moveTo(X+W-38,Y+92); ctx.lineTo(X+W-22,Y+92); ctx.lineTo(X+W-26,Y+104); ctx.lineTo(X+W-34,Y+104); ctx.closePath(); ctx.fill();
+      spiderWeb(X+34,Y+44); dust(r);
+      break;
   }
 }
 

@@ -29,3 +29,4 @@ function moveEnt(e,inputFn,speed,respectDoors){
   if(canMove(e.x,ny,respectDoors)) e.y=ny;
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function roomOf(x,y){ for(const r of ROOMS) if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) return r.name; return null; }

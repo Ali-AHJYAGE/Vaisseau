@@ -67,5 +67,6 @@ const Sfx = (() => {
     hiss:    ()=>{ noise(0.35,0.32); tone(320,0.3,'sawtooth',0.14,140); },                    // feulement
     sniff:   ()=>{ noise(0.12,0.18); noise(0.12,0.18,0.16); },                                // flair
     poof:    ()=>{ noise(0.22,0.24); tone(500,0.18,'sine',0.16,900); },                       // camouflage
+    crackle: ()=>{ noise(0.05,0.10); tone(170,0.05,'sine',0.07,90); },                         // cheminée
   };
 })();
