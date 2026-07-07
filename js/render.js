@@ -62,6 +62,7 @@ function draw(){
     drawFloorPattern(r,th);
     drawRoomScene(r,th);
     drawWallDecor(r,th);
+    drawRoomExtras(r,th);
     ctx.restore();
 
     // mur extérieur + plinthe intérieure (aspect cartoon)
@@ -409,6 +410,64 @@ function drawHidden(x,y,obj){
     ctx.strokeStyle='#b0a090'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(x+14,y+1,6,-1,1); ctx.stroke(); }
   else if(obj===3){ fRR(x-13,y-9,26,18,3,'#c0563f'); oRR(x-13,y-9,26,18,3,'#7a3222',2); fRR(x-13,y-9,5,18,2,'#e0b060'); }
   else cheese(x,y+4,13);
+}
+
+// ── Ambiance cosy en plus par pièce ────────────────────────
+function flame(x,base,w,h){ ctx.beginPath(); ctx.moveTo(x-w,base); ctx.quadraticCurveTo(x-w,base-h*0.6,x,base-h); ctx.quadraticCurveTo(x+w,base-h*0.6,x+w,base); ctx.closePath(); ctx.fill(); }
+function fireplace(x,y){
+  fRR(x-30,y-24,60,48,4,'#8a5a44'); oRR(x-30,y-24,60,48,4,'#5e3826',3);
+  ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=1.5; for(let yy=y-14;yy<y+20;yy+=10){ ctx.beginPath(); ctx.moveTo(x-30,yy); ctx.lineTo(x+30,yy); ctx.stroke(); }
+  fRR(x-19,y-6,38,30,3,'#1a1210');
+  const f=Math.sin(frame*0.3), f2=Math.cos(frame*0.4);
+  glowCircle(x,y+8,26,`rgba(255,140,50,${(0.16+Math.abs(f)*0.12).toFixed(2)})`);
+  ctx.fillStyle='rgba(255,140,40,.9)'; flame(x-8,y+22,10,18+f*4);
+  ctx.fillStyle='rgba(255,205,70,.95)'; flame(x+2,y+22,9,16+f2*4);
+  ctx.fillStyle='rgba(255,90,40,.85)'; flame(x+11,y+22,7,12+f*3);
+  fRR(x-34,y-28,68,7,2,'#a06a4a'); oRR(x-34,y-28,68,7,2,'#6e4a30',2);
+}
+function windowNight(x,y,w,h){
+  fRR(x-w/2,y-h/2,w,h,4,'#0c1436');
+  ctx.save(); rpath(x-w/2,y-h/2,w,h,4); ctx.clip();
+  ctx.fillStyle='#fff'; for(let i=0;i<12;i++) dot2(x-w/2+((i*61)%w),y-h/2+((i*37)%h),1,'#fff');
+  dot2(x+w/2-11,y-h/2+11,7,'#f2efd0'); dot2(x+w/2-8,y-h/2+9,5.5,'#0c1436'); // lune croissant
+  ctx.restore();
+  oRR(x-w/2,y-h/2,w,h,4,'#8a6a4a',3);
+  ctx.strokeStyle='#8a6a4a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,y-h/2); ctx.lineTo(x,y+h/2); ctx.moveTo(x-w/2,y); ctx.lineTo(x+w/2,y); ctx.stroke();
+  fRR(x-w/2-4,y-h/2-2,8,h+4,3,'#c0563f'); fRR(x+w/2-4,y-h/2-2,8,h+4,3,'#c0563f'); // rideaux
+}
+function garland(x1,x2,y,n){
+  ctx.strokeStyle='rgba(90,60,40,.5)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x1,y);
+  for(let i=1;i<=n;i++){ const t=i/n; ctx.quadraticCurveTo(x1+(x2-x1)*(t-0.5/n),y+9,x1+(x2-x1)*t,y); } ctx.stroke();
+  const cols=['#ff6b6b','#ffd23f','#5fbf6a','#5c8fe0','#c77dff'];
+  for(let i=0;i<n;i++){ const xx=x1+(x2-x1)*((i+0.5)/n); const on=(Math.floor(frame*0.1)+i)%2; dot2(xx,y+8,3,on?cols[i%cols.length]:'#5a4a3a'); }
+}
+function drawRoomExtras(r,th){
+  const X=r.x,Y=r.y,W=r.w,H=r.h;
+  switch(r.name){
+    case 'Salon':
+      fireplace(X+W-48,Y+H-40); garland(X+22,X+W-22,Y+34,6); break;
+    case 'Salle à manger':
+      garland(X+22,X+W-22,Y+30,7); windowNight(X+130,Y+42,58,32); break;
+    case 'Cuisine':
+      windowNight(X+W-46,Y+48,50,30); break;
+    case 'Chambre':
+      windowNight(X+W-46,Y+46,52,32); break;
+    case 'Salle de bain': {
+      rug(X+44,Y+H-20,42,15,'#7ac8e0');           // tapis de bain
+      const dy=Y+H-58; dot2(X+40,dy,7,'#ffd23f'); dot2(X+35,dy-5,4,'#ffd23f'); // canard
+      ctx.fillStyle='#ff8a3d'; ctx.beginPath(); ctx.moveTo(X+31,dy-5); ctx.lineTo(X+27,dy-4); ctx.lineTo(X+31,dy-3); ctx.closePath(); ctx.fill();
+      dot2(X+36,dy-6,1.2,'#000'); break;
+    }
+    case 'Bureau':
+      fRR(X+30,Y+H-60,4,18,1,'#5a4a3a'); dot2(X+34,Y+H-60,6,'#ffe08a'); // lampe
+      fRR(X+50,Y+H-50,14,10,1,'#efe8dc'); fRR(X+55,Y+H-52,14,10,1,'#f6f0e6'); break; // papiers
+    case 'Garde-manger':
+      garland(X+18,X+W-18,Y+30,5); break;
+    case 'Buanderie':
+      // fil à linge supplémentaire déjà présent ; on ajoute un balai
+      ctx.strokeStyle='#8a5a2a'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(X+W-30,Y+50); ctx.lineTo(X+W-30,Y+92); ctx.stroke();
+      ctx.fillStyle='#d9b45a'; ctx.beginPath(); ctx.moveTo(X+W-38,Y+92); ctx.lineTo(X+W-22,Y+92); ctx.lineTo(X+W-26,Y+104); ctx.lineTo(X+W-34,Y+104); ctx.closePath(); ctx.fill(); break;
+  }
 }
 
 // Décorations murales (horloge + cadres) sur le haut de chaque pièce
