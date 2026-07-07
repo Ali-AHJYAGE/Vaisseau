@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v24';
+const VERSION='v25';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -61,7 +61,7 @@ const PARTNER_TIMEOUT=1200;     // ~20 s avant abandon
 // Bande de N frames. idle = vignette à l'arrêt ; walk = cycle de marche.
 // faceRight=false → les frames regardent à GAUCHE (on retourne l'image pour
 // aller à droite). dispH = hauteur affichée (px) ; yOff = décalage vertical.
-const SKIN_ANIM={ frames:5, idle:0, walk:[1,2,3,4], faceRight:false, step:6, dispH:PLAYER_R*3, yOff:-8 };
+const SKIN_ANIM={ frames:5, idle:0, walk:[1,2,3,4], faceRight:false, step:6, dispH:PLAYER_R*3.6, yOff:-6 };
 
 // ============================================================
 //  CARTE ASYMÉTRIQUE

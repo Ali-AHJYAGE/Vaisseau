@@ -41,22 +41,33 @@ function draw(){
 
   const iAmInno=(myRole==='innocent'||localMode), iAmImpo=(myRole==='imposteur'||localMode);
 
-  // Couloirs
-  for(const z of HALLS){ rpath(z.x,z.y,z.w,z.h,10); ctx.fillStyle=C.hall; ctx.fill(); }
-  // Salles — sol thématique + décor par pièce (clippé à la salle)
+  // Couloirs (parquet à planches)
+  for(const z of HALLS){
+    rpath(z.x,z.y,z.w,z.h,10); ctx.fillStyle=C.hall; ctx.fill();
+    ctx.save(); rpath(z.x,z.y,z.w,z.h,10); ctx.clip();
+    ctx.strokeStyle='rgba(0,0,0,0.13)'; ctx.lineWidth=1.5;
+    if(z.w>=z.h){ for(let y=z.y+15;y<z.y+z.h;y+=15){ ctx.beginPath(); ctx.moveTo(z.x,y); ctx.lineTo(z.x+z.w,y); ctx.stroke(); } }
+    else { for(let x=z.x+15;x<z.x+z.w;x+=15){ ctx.beginPath(); ctx.moveTo(x,z.y); ctx.lineTo(x,z.y+z.h); ctx.stroke(); } }
+    ctx.restore();
+  }
+  // Salles — sol thématique + murs (plinthe) + décor + décos murales
   for(const r of ROOMS){
     const th=ROOM_FLOOR[r.name]||ROOM_FLOOR._def;
-    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=12; ctx.shadowOffsetY=5;
-    rpath(r.x,r.y,r.w,r.h,20);
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.4)'; ctx.shadowBlur=14; ctx.shadowOffsetY=6;
+    rpath(r.x,r.y,r.w,r.h,22);
     const g=ctx.createLinearGradient(0,r.y,0,r.y+r.h); g.addColorStop(0,th.hi); g.addColorStop(1,th.lo);
     ctx.fillStyle=g; ctx.fill(); ctx.restore();
 
-    ctx.save(); rpath(r.x,r.y,r.w,r.h,20); ctx.clip();
+    ctx.save(); rpath(r.x,r.y,r.w,r.h,22); ctx.clip();
     drawFloorPattern(r,th);
     drawRoomScene(r,th);
+    drawWallDecor(r,th);
     ctx.restore();
 
-    rpath(r.x+3,r.y+3,r.w-6,r.h-6,17); ctx.strokeStyle=th.edge; ctx.lineWidth=3; ctx.stroke();
+    // mur extérieur + plinthe intérieure (aspect cartoon)
+    rpath(r.x+2,r.y+2,r.w-4,r.h-4,20); ctx.strokeStyle=th.edge; ctx.lineWidth=5; ctx.stroke();
+    rpath(r.x+9,r.y+9,r.w-18,r.h-18,15); ctx.strokeStyle='rgba(255,244,224,0.16)'; ctx.lineWidth=4; ctx.stroke();
+    // plaque de nom
     ctx.fillStyle=th.ink; ctx.font='800 12px sans-serif'; ctx.textAlign='center'; ctx.letterSpacing='1px';
     ctx.fillText(r.name.toUpperCase(),r.x+r.w/2,r.y+20); ctx.letterSpacing='0px';
   }
@@ -398,6 +409,22 @@ function drawHidden(x,y,obj){
     ctx.strokeStyle='#b0a090'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(x+14,y+1,6,-1,1); ctx.stroke(); }
   else if(obj===3){ fRR(x-13,y-9,26,18,3,'#c0563f'); oRR(x-13,y-9,26,18,3,'#7a3222',2); fRR(x-13,y-9,5,18,2,'#e0b060'); }
   else cheese(x,y+4,13);
+}
+
+// Décorations murales (horloge + cadres) sur le haut de chaque pièce
+function drawWallDecor(r,th){
+  const X=r.x, Y=r.y, W=r.w;
+  // horloge (haut-droite)
+  const clk=X+W-32, cly=Y+44;
+  dot2(clk,cly,11,'#f6eede'); ctx.strokeStyle='#8a6a3a'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(clk,cly,11,0,TAU); ctx.stroke();
+  ctx.strokeStyle='#5a3a22'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(clk,cly); ctx.lineTo(clk+Math.cos(frame*0.02-1.2)*7,cly+Math.sin(frame*0.02-1.2)*7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(clk,cly); ctx.lineTo(clk,cly-8); ctx.stroke();
+  // cadres (haut-gauche)
+  const cols=['#e0736a','#5c8fe0','#5fbf6a','#e0b84d'];
+  for(let i=0;i<2;i++){ const px=X+34+i*30, py=Y+42;
+    fRR(px-11,py-9,22,18,2,'#7a5230'); fRR(px-8,py-6,16,12,1,cols[(i+((X/40)|0))%4]);
+    dot2(px-2,py,2.4,'rgba(255,255,255,.5)'); }
 }
 
 // Escaliers, bouches d'aération, fissures (visuel)
