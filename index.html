@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#070810">
   <title>Chat &amp; Souris</title>
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=29">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -20,17 +20,34 @@
 
 <div id="menu">
   <h1>🐭 Chat &amp; Souris 🐱</h1>
-  <p>Ouvre ce lien sur deux appareils (ou deux onglets), choisis ton camp dans chacun.</p>
   <div id="conn-status"></div>
-  <div class="btns">
-    <button id="pick-inno" class="b-inno" onclick="pickRole('innocent')">🐭 Souris</button>
-    <button id="pick-impo" class="b-impo" onclick="pickRole('imposteur')">🐱 Chat</button>
+
+  <!-- Lobby -->
+  <div id="lobby">
+    <button class="b-inno" onclick="quickPlay()">⚡ Partie rapide</button>
+    <button class="b-impo" onclick="createGame()">🔒 Créer une partie privée</button>
+    <div class="joinrow">
+      <input id="code-input" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')joinGame(this.value)">
+      <button class="b-join" onclick="joinGame(document.getElementById('code-input').value)">Rejoindre</button>
+    </div>
+    <button class="b-local" onclick="startLocal()">🏠 Jouer en local — même écran</button>
   </div>
-  <button class="b-local" onclick="startLocal()">🏠 Jouer en local — même écran</button>
-  <button class="b-ghost" onclick="resetGame()">↻ Réinitialiser</button>
+
+  <!-- Salon (une fois créé/rejoint) -->
+  <div id="room" style="display:none">
+    <div id="room-code"></div>
+    <p class="small">Choisissez chacun votre rôle :</p>
+    <div class="btns">
+      <button id="pick-inno" class="b-inno" onclick="pickRole('innocent')">🐭 Souris</button>
+      <button id="pick-impo" class="b-impo" onclick="pickRole('imposteur')">🐱 Chat</button>
+    </div>
+    <button class="b-ghost" onclick="leaveRoom()">← Quitter la partie</button>
+  </div>
+
   <p class="hint">
-    🐭 Grignote les 4 fromages 🧀 et fuis ! Trous de souris 🕳️ et coin repos 🧀 pour t'en sortir.<br>
-    🐱 Traque la souris et attrape-la. Éteins la lumière, pose un piège 🪤 ou claque les portes.
+    🐭 Grignote les 4 fromages 🧀 et fuis ! &nbsp; 🐱 Traque la souris et attrape-la.
   </p>
 </div>
 
@@ -87,19 +104,19 @@
   </div>
 </div>
 
-<script src="js/constants.js?v=28"></script>
-<script src="js/state.js?v=28"></script>
-<script src="js/assets.js?v=28"></script>
-<script src="js/audio.js?v=28"></script>
-<script src="js/fx.js?v=28"></script>
-<script src="js/input.js?v=28"></script>
-<script src="js/physics.js?v=28"></script>
-<script src="js/minigames.js?v=28"></script>
-<script src="js/network.js?v=28"></script>
-<script src="js/render.js?v=28"></script>
-<script src="js/hud.js?v=28"></script>
-<script src="js/game.js?v=28"></script>
-<script src="js/main.js?v=28"></script>
-<script src="js/touch.js?v=28"></script>
+<script src="js/constants.js?v=29"></script>
+<script src="js/state.js?v=29"></script>
+<script src="js/assets.js?v=29"></script>
+<script src="js/audio.js?v=29"></script>
+<script src="js/fx.js?v=29"></script>
+<script src="js/input.js?v=29"></script>
+<script src="js/physics.js?v=29"></script>
+<script src="js/minigames.js?v=29"></script>
+<script src="js/network.js?v=29"></script>
+<script src="js/render.js?v=29"></script>
+<script src="js/hud.js?v=29"></script>
+<script src="js/game.js?v=29"></script>
+<script src="js/main.js?v=29"></script>
+<script src="js/touch.js?v=29"></script>
 </body>
 </html>

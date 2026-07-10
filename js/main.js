@@ -2,6 +2,35 @@
 //  POINT D'ENTRÉE (v9)
 // ============================================================
 
+// ── LOBBY : créer / rejoindre / partie rapide / quitter ────
+function _audioWake(){ if(typeof Sfx!=='undefined'){ Sfx.init(); Sfx.resume(); } }
+
+function createGame() {
+  if (!wsOpen()) { _setStatus('🔴 Connexion au serveur…'); return; }
+  _audioWake(); tryFullscreen();
+  send({ type: 'create', private: true });
+  _setStatus('⏳ Création de la partie…');
+}
+function quickPlay() {
+  if (!wsOpen()) { _setStatus('🔴 Connexion au serveur…'); return; }
+  _audioWake(); tryFullscreen();
+  send({ type: 'quick' });
+  _setStatus('⚡ Recherche d\'une partie…');
+}
+function joinGame(code) {
+  code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  if (code.length < 4) { _setStatus('Entre un code à 4 caractères'); return; }
+  if (!wsOpen()) { _setStatus('🔴 Connexion au serveur…'); return; }
+  _audioWake(); tryFullscreen();
+  send({ type: 'join', code });
+  _setStatus('⏳ Connexion à la partie…');
+}
+function leaveRoom() {
+  send({ type: 'leave' });
+  setRoomCode(null); myRole = null;
+  _showLobby(); _setStatus('');
+}
+
 // L'utilisateur clique un rôle → on le DEMANDE au serveur (qui le verrouille).
 // Le jeu ne démarre qu'à la réponse 'assigned' (voir network.js).
 function pickRole(role) {

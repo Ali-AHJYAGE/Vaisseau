@@ -18,6 +18,12 @@ const CID = (() => {
   } catch (_) { return Math.random().toString(36).slice(2); }
 })();
 
+// Code du salon courant (retenu pour revenir automatiquement après une coupure)
+let roomCode = null;
+try { roomCode = localStorage.getItem('cs-room') || null; } catch (_) {}
+function setRoomCode(c){ roomCode = c || null; try { c ? localStorage.setItem('cs-room', c) : localStorage.removeItem('cs-room'); } catch(_){} }
+function wsOpen(){ return ws && ws.readyState === WebSocket.OPEN; }
+
 function _setStatus(txt) {
   const el = document.getElementById('conn-status');
   if (el) el.textContent = txt;
@@ -32,11 +38,13 @@ function connectWS() {
   ws = new WebSocket(`${proto}://${location.host}`);
 
   ws.onopen = () => {
-    _setStatus('🟢 Connecté…');
-    // 1re chose : s'annoncer avec notre identité stable
+    _setStatus('🟢 Connecté');
     ws.send(JSON.stringify({ type: 'hello', cid: CID }));
-    // Reconnexion en cours de partie : redemander notre rôle
-    if (myRole && !localMode) ws.send(JSON.stringify({ type: 'pick', role: myRole }));
+    // On était dans un salon → on y revient automatiquement
+    if (roomCode) {
+      ws.send(JSON.stringify({ type: 'join', code: roomCode }));
+      if (myRole && !localMode) ws.send(JSON.stringify({ type: 'pick', role: myRole }));
+    }
   };
   ws.onmessage = e => { try { handleMessage(JSON.parse(e.data)); } catch (err) { console.error('[WS]', err); } };
   ws.onclose   = () => { ws = null; _setStatus('🔴 Reconnexion…'); setTimeout(connectWS, 1000); };
@@ -51,6 +59,18 @@ addEventListener('visibilitychange', () => {
 function handleMessage(m) {
   _msgCount++;
   switch (m.type) {
+
+    // ── On est entré dans un salon ──
+    case 'room':
+      setRoomCode(m.code);
+      _showRoomView(m);
+      break;
+
+    // ── Erreur de lobby ──
+    case 'error':
+      if (m.reason === 'notfound') { setRoomCode(null); _showLobby(); _setStatus('❌ Code introuvable'); }
+      else if (m.reason === 'full') { setRoomCode(null); _showLobby(); _setStatus('❌ Cette partie est déjà pleine'); }
+      break;
 
     // ── Disponibilité des rôles + nombre de joueurs ──
     case 'roles':
@@ -114,18 +134,18 @@ function handleMessage(m) {
   }
 }
 
-// Applique l'état des rôles au menu (verrouillage) et au statut de connexion
+// Applique l'état des rôles au salon (verrouillage) et au statut
 function _applyRoles(m) {
+  const enough = m.count >= 2;
   const bi = document.getElementById('pick-inno');
   const bp = document.getElementById('pick-impo');
   if (bi && bp && !gameStarted) {
-    _lockButton(bi, m.innocent && myRole !== 'innocent');
-    _lockButton(bp, m.imposteur && myRole !== 'imposteur');
+    _lockButton(bi, !enough || (m.innocent && myRole !== 'innocent'));
+    _lockButton(bp, !enough || (m.imposteur && myRole !== 'imposteur'));
   }
 
   if (!gameStarted) {
-    if (m.count >= 2)      _setStatus('🟢 2 joueurs — choisissez souris ou chat !');
-    else                   _setStatus('🟢 Connecté — en attente du 2ᵉ joueur…');
+    _setStatus(enough ? '🟢 2 joueurs — choisis ton rôle !' : '⏳ En attente du 2ᵉ joueur…');
   }
 
   // En jeu : gérer le départ / retour du partenaire (compteur)
@@ -143,6 +163,22 @@ function _lockButton(btn, locked) {
   btn.disabled = locked;
   btn.style.opacity = locked ? '0.4' : '1';
   btn.style.pointerEvents = locked ? 'none' : 'auto';
+}
+
+// Bascule lobby ↔ salon
+function _showRoomView(m) {
+  const lobby = document.getElementById('lobby'), room = document.getElementById('room');
+  if (lobby) lobby.style.display = 'none';
+  if (room)  room.style.display = 'flex';
+  const rc = document.getElementById('room-code');
+  if (rc) rc.innerHTML = m.private
+    ? `Code de la partie&nbsp;: <b class="code">${m.code}</b><br><span class="small">Partage-le avec ton adversaire</span>`
+    : `⚡ Partie rapide — recherche d'un joueur…`;
+}
+function _showLobby() {
+  const lobby = document.getElementById('lobby'), room = document.getElementById('room');
+  if (lobby) lobby.style.display = 'flex';
+  if (room)  room.style.display = 'none';
 }
 
 function send(obj) {
