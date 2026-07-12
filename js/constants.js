@@ -2,7 +2,7 @@
 //  CONSTANTES — refonte v13 : map asymétrique, armes, gadgets,
 //  vents (imposteur) / téléporteurs (innocent), manches.
 // ============================================================
-const VERSION='v29';
+const VERSION='v30';
 const VIEW_W=760, VIEW_H=560;
 const WORLD_W=1700, WORLD_H=1250;
 const PLAYER_R=15, SPEED=3.0;
@@ -15,10 +15,12 @@ const STAMINA_REGEN=0.7;    // par frame au repos
 
 // ── Combat ─────────────────────────────────────────────────
 const HEARTS_MAX=3;
-const HEAL_CD=780;          // soin plus lent (~13 s/cœur) — le soin est précieux
+// Infirmerie : rester IMMOBILE 3 s dans la zone pour gagner 1 cœur, puis 2 min de recharge
+const HEAL_HOLD=180;             // frames immobiles requises (~3 s)
+const HEAL_COOLDOWN_MS=120000;   // 1 soin toutes les 2 min
 // Capacités du CHAT (portée en px, dégâts en cœurs, cd en frames)
 const WEAPON_TYPES={
-  knife:   {name:'Griffes', icon:'🐾', range:46,  dmg:1, cd:70},   // défaut : rapide, courte
+  knife:   {name:'Griffes', icon:'🐾', range:46,  dmg:1, cd:90},   // défaut : rapide, courte
   blaster: {name:'Bond',    icon:'💨', range:130, dmg:1, cd:170},  // bond : longue portée, lent
   cleaver: {name:'Coup de patte', icon:'💥', range:36, dmg:2, cd:120}, // lourd : 2 dégâts, très courte
 };

@@ -6,14 +6,16 @@ let localMode = false;
 let gameStarted = false;
 
 const S = {
-  inno: { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0 },
+  inno: { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0, healProg:0 },
   impo: { x:820, y:540, present:false, weapon:'knife' },
   tasks: { t1:false, t2:false, t3:false, t4:false },
   sabotageUntil: 0,   // lumières (timestamp ms)
   oxygenUntil: 0,     // crise O₂ (timestamp ms)
   doorsUntil: 0,      // portes closes (timestamp ms)
+  healUntil: 0,       // infirmerie en recharge jusqu'à (timestamp ms)
   over: null,
 };
+let healHold = 0;     // frames immobiles cumulées dans l'infirmerie
 
 let frame = 0;
 

@@ -101,7 +101,7 @@ function handleMessage(m) {
       if (m.weapon) S.impo.weapon = m.weapon; break;
     case 'world': {
       const before = S.tasks ? Object.values(S.tasks).filter(Boolean).length : 0;
-      S.tasks = m.tasks; S.over = m.over;
+      S.tasks = m.tasks; S.over = m.over; S.healUntil = m.healUntil || 0;
       const after = Object.values(S.tasks).filter(Boolean).length;
       if (after > before && typeof Sfx !== 'undefined') Sfx.task(); // ping quand une tâche tombe
       break;
@@ -186,13 +186,13 @@ function send(obj) {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
-function sendInno() { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive, hidden: S.inno.hidden, hideObj: S.inno.hideObj } }); }
+function sendInno() { send({ type: 'inno', data: { x: S.inno.x, y: S.inno.y, hearts: S.inno.hearts, alive: S.inno.alive, hidden: S.inno.hidden, hideObj: S.inno.hideObj, healProg: S.inno.healProg } }); }
 function sendImpo() { send({ type: 'impo', x: S.impo.x, y: S.impo.y, weapon: S.impo.weapon }); }
 
 // Le monde (tâches, fin) change rarement : on ne l'envoie que s'il change
 let _lastWorld = '';
 function sendWorld() {
-  const w = { type: 'world', tasks: S.tasks, over: S.over };
+  const w = { type: 'world', tasks: S.tasks, over: S.over, healUntil: S.healUntil };
   const sig = JSON.stringify(w);
   if (sig === _lastWorld) return;
   _lastWorld = sig;

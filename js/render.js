@@ -81,12 +81,8 @@ function draw(){
   for(const d of DOORS){ rpath(d.x,d.y,d.w,d.h,5); ctx.fillStyle=dShut?'rgba(255,90,110,0.95)':'rgba(150,165,220,0.3)'; ctx.fill();
     if(dShut){ ctx.strokeStyle='#ffd0d6'; ctx.lineWidth=2; ctx.stroke(); } }
 
-  // Coin fromage — la souris y regagne une vie
-  const hpz=Math.sin(frame*0.12)*0.15+0.85;
-  glowCircle(HEAL_ZONE.x,HEAL_ZONE.y,HEAL_ZONE.r,`rgba(255,207,77,${(hpz*0.22).toFixed(2)})`);
-  fRR(HEAL_ZONE.x-26,HEAL_ZONE.y+2,52,18,9,'#c88a5a'); oRR(HEAL_ZONE.x-26,HEAL_ZONE.y+2,52,18,9,'#8a5a30',2.5);
-  cheeseWheel(HEAL_ZONE.x-9,HEAL_ZONE.y-2,12); cheese(HEAL_ZONE.x+13,HEAL_ZONE.y-3,9);
-  ctx.font='15px sans-serif'; ctx.textAlign='center'; ctx.fillText('❤️',HEAL_ZONE.x,HEAL_ZONE.y-24+Math.sin(frame*0.1)*3);
+  // Infirmerie (soin) — visible et son cooldown affiché pour les deux
+  drawInfirmary();
 
   // Piège à souris (ex-O₂)
   const oxyOn=Date.now()<S.oxygenUntil;
@@ -377,6 +373,41 @@ function drawMouseHole(x,y){
   ctx.fillStyle='rgba(255,235,210,0.12)'; ctx.beginPath(); ctx.ellipse(x,y+3,8,4,0,0,TAU); ctx.fill();
   ctx.restore();
 }
+// Infirmerie : lit + croix + trousse, anneau de progression, cooldown sous la zone
+function drawInfirmary(){
+  const x=HEAL_ZONE.x, y=HEAL_ZONE.y, now=Date.now(), R=HEAL_ZONE.r;
+  const onCd = now<S.healUntil;
+  glowCircle(x,y,R, onCd?'rgba(150,160,180,.10)':'rgba(120,220,150,.15)');
+  ctx.strokeStyle=onCd?'rgba(160,170,190,.35)':'rgba(120,220,150,.5)'; ctx.lineWidth=2; ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.arc(x,y,R-4,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  // lit d'infirmerie
+  fRR(x-26,y-4,52,26,6,'#eef4f6'); oRR(x-26,y-4,52,26,6,'#b9c6cc',2.5);
+  fRR(x-26,y+8,52,14,6,'#e0605e');                 // couverture rouge
+  fRR(x-22,y-1,15,12,3,'#cfe0ee');                 // oreiller
+  // panneau croix médicale
+  fRR(x-9,y-30,18,18,4,'#ffffff'); oRR(x-9,y-30,18,18,4,'#d0555a',2);
+  fRR(x-2,y-27,4,12,1,'#e0484f'); fRR(x-6,y-23,12,4,1,'#e0484f');
+  // trousse de secours
+  fRR(x+16,y+8,16,12,3,'#f2f4f5'); oRR(x+16,y+8,16,12,3,'#b9c6cc',2); dot2(x+24,y+14,1.6,'#e0484f');
+  // anneau de progression (synchro healProg → visible des deux)
+  const p=S.inno.healProg||0;
+  if(p>0){
+    ctx.strokeStyle='#5fe0a0'; ctx.lineWidth=4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(x,y,R-1,-Math.PI/2,-Math.PI/2+p*TAU); ctx.stroke(); ctx.lineCap='butt';
+    ctx.fillStyle='#dfffe9'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(Math.ceil((1-p)*(HEAL_HOLD/60))+'s', x, y-R-8);
+  }
+  // barre de recharge SOUS l'infirmerie
+  if(onCd){
+    const w=78, bx=x-w/2, by=y+R+7, frac=Math.max(0,Math.min(1,(S.healUntil-now)/HEAL_COOLDOWN_MS));
+    fRR(bx-2,by-2,w+4,10,4,'rgba(0,0,0,.5)');
+    fRR(bx,by,w*frac,6,3,'#8fa0c0');
+    const s=Math.ceil((S.healUntil-now)/1000);
+    ctx.fillStyle='#cfd6e6'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+    ctx.fillText('🏥 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0'), x, by+19);
+  }
+}
+
 // Piège à souris : socle bois + barre métallique + appât
 function drawTrap(x,y,armed){
   fRR(x-16,y-9,32,18,3,'#b58a52'); oRR(x-16,y-9,32,18,3,'#7a5a30',2);

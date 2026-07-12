@@ -125,11 +125,19 @@ function handleImpoPickups(){
 
 // ── Soin / O₂ ──────────────────────────────────────────────
 function handleHeal(){
-  if(S.inno.hearts>=HEARTS_MAX) return;
-  if(dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r && healReady<=0){
-    S.inno.hearts++; healReady=HEAL_CD;
-    Sfx.heal(); sparkle(S.inno.x,S.inno.y,'#ff6b6b'); floatText(S.inno.x,S.inno.y-22,'+1 ❤️','#ff6b6b');
-  }
+  const now=Date.now();
+  const inZone = dist(S.inno,HEAL_ZONE)<HEAL_ZONE.r;
+  const iv=(localMode?inputVecInno:inputVec)();
+  const moving = iv.dx!==0 || iv.dy!==0;
+  const ready = S.inno.hearts<HEARTS_MAX && now>=S.healUntil;   // infirmerie dispo ?
+  if(inZone && ready && !moving && S.inno.alive){
+    healHold++;
+    if(healHold>=HEAL_HOLD){                                     // resté 3 s immobile → +1 cœur
+      S.inno.hearts++; S.healUntil=now+HEAL_COOLDOWN_MS; healHold=0;
+      Sfx.heal(); sparkle(S.inno.x,S.inno.y,'#7fe0a0'); floatText(S.inno.x,S.inno.y-24,'+1 ❤️','#ff6b6b');
+    }
+  } else healHold=0;                                             // bouger / sortir → recommence à zéro
+  S.inno.healProg = (inZone && ready) ? Math.min(1, healHold/HEAL_HOLD) : 0;
 }
 function handleOxyRepair(){
   if(Date.now()>=S.oxygenUntil) return;
@@ -291,10 +299,10 @@ function onActionImpo(){ // Entrée = chat en mode local
 function startRound(role, round){
   myRole = role;
   roundNum = round;
-  S.inno = { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0 };
+  S.inno = { x:820, y:610, hearts:HEARTS_MAX, alive:true, shield:0, synced:false, hidden:false, hideObj:0, healProg:0 };
   S.impo = { x:820, y:540, present:(role==='imposteur'), weapon:'knife' };
   S.tasks = { t1:false, t2:false, t3:false, t4:false };
-  S.sabotageUntil=0; S.oxygenUntil=0; S.doorsUntil=0; S.over=null;
+  S.sabotageUntil=0; S.oxygenUntil=0; S.doorsUntil=0; S.healUntil=0; healHold=0; S.over=null;
   attackReady=healReady=sabReady=oxyReady=doorReady=0;
   ventCooldown=tpCooldown=0;
   stamina=STAMINA_MAX; scanUntil=0; scanCharges=0; dashFrames=0;
